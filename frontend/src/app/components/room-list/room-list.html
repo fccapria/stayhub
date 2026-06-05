@@ -1,0 +1,284 @@
+<div class="rooms-container">
+  <!-- Hero Section -->
+  <section class="hero-section">
+    <div class="hero-content">
+      <span class="hero-subtitle">WELCOME TO STAYHUB</span>
+      <h1 class="gold-gradient-text">Uncompromising Luxury</h1>
+      <p class="hero-description">Discover curated luxury accommodations tailored for elegant living and exceptional comfort.</p>
+    </div>
+  </section>
+
+  <!-- Error Alerts -->
+  <div *ngIf="errorMessage() && !selectedRoom()" class="alert-box error animate-fade-in-up">
+    <span class="material-icons">error_outline</span>
+    <p>{{ errorMessage() }}</p>
+    <button class="close-alert-btn" (click)="errorMessage.set(null)">×</button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading() && rooms().length === 0" class="loading-state">
+    <div class="spinner"></div>
+    <p>Loading curated rooms...</p>
+  </div>
+
+  <!-- Rooms Grid -->
+  <div *ngIf="rooms().length > 0" class="rooms-grid">
+    <div *ngFor="let room of rooms()" class="room-card glass-panel animate-fade-in-up">
+      <div class="room-image-wrapper">
+        <img [src]="getRoomImageUrl(room.name)" [alt]="room.name" class="room-image" />
+        <div class="room-price-badge">
+          <span class="price-val">{{ room.pricePerNight | currency:'EUR':'symbol':'1.0-2' }}</span>
+          <span class="price-lbl">/ night</span>
+        </div>
+      </div>
+      
+      <div class="room-card-content">
+        <div class="room-header">
+          <h3>{{ room.name }}</h3>
+          <div class="room-capacity">
+            <span class="material-icons">people</span>
+            <span>Up to {{ room.capacity }} guests</span>
+          </div>
+        </div>
+        
+        <p class="room-description">{{ room.description }}</p>
+        
+        <div class="room-footer">
+          <button 
+            *ngIf="!authService.isAuthenticated()" 
+            class="glow-btn full-width" 
+            (click)="authService.login()">
+            <span class="material-icons btn-icon">login</span>
+            Login to Book
+          </button>
+          
+          <button 
+            *ngIf="authService.isAuthenticated() && !authService.hasRole('ADMIN')" 
+            class="glow-btn full-width" 
+            (click)="openBookingModal(room)">
+            <span class="material-icons btn-icon">hotel</span>
+            Reserve Room
+          </button>
+
+          <div *ngIf="authService.isAuthenticated() && authService.hasRole('ADMIN')" class="admin-notice">
+            <span class="material-icons">info</span>
+            Logged in as Admin
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading() && rooms().length === 0" class="empty-state glass-panel">
+    <span class="material-icons empty-icon">hotel</span>
+    <h3>No Rooms Available</h3>
+    <p>We couldn't find any rooms currently registered. Please check back later or add rooms as an admin.</p>
+  </div>
+
+  <!-- Reservation & Payment Modal -->
+  <div *ngIf="selectedRoom() as room" class="modal-backdrop" (click)="closeBookingModal()">
+    <div class="modal-card glass-panel" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Reserve {{ room.name }}</h2>
+        <button class="close-btn" (click)="closeBookingModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Date Selector Fields -->
+        <div class="modal-section-title">
+          <span class="material-icons">calendar_month</span>
+          <h3>Booking Duration</h3>
+        </div>
+        <div class="date-row">
+          <div class="custom-input-group">
+            <label class="custom-input-label" for="checkIn">Check-In Date</label>
+            <input 
+              id="checkIn"
+              type="date" 
+              class="custom-input" 
+              [class.input-error]="checkInTouched() && !isDatesValid()"
+              [ngModel]="checkIn()" 
+              (ngModelChange)="checkIn.set($event)" 
+              (blur)="checkInTouched.set(true)"
+            />
+          </div>
+          <div class="custom-input-group">
+            <label class="custom-input-label" for="checkOut">Check-Out Date</label>
+            <input 
+              id="checkOut"
+              type="date" 
+              class="custom-input" 
+              [class.input-error]="checkOutTouched() && !isDatesValid()"
+              [ngModel]="checkOut()" 
+              (ngModelChange)="checkOut.set($event)" 
+              (blur)="checkOutTouched.set(true)"
+            />
+          </div>
+        </div>
+
+        <!-- Order Summary Card -->
+        <div class="summary-card" *ngIf="numberOfNights() > 0 && isDatesValid()">
+          <div class="summary-row">
+            <span>Price per night:</span>
+            <strong>{{ room.pricePerNight | currency:'EUR' }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Duration:</span>
+            <strong>{{ numberOfNights() }} night(s)</strong>
+          </div>
+          <div class="summary-divider"></div>
+          <div class="summary-row total-row">
+            <span>Total Price:</span>
+            <strong class="gold-gradient-text">{{ totalPrice() | currency:'EUR' }}</strong>
+          </div>
+        </div>
+
+        <div class="error-msg-inline" *ngIf="(checkInTouched() || checkOutTouched()) && !isDatesValid()">
+          <span class="material-icons">warning</span>
+          <span>Please select valid dates. Check-in must be today or in the future, and check-out must be after check-in.</span>
+        </div>
+
+        <!-- Payment Method Tabs -->
+        <div class="modal-section-title spacing-top">
+          <span class="material-icons">payment</span>
+          <h3>Payment Gateway</h3>
+        </div>
+        <div class="payment-tabs">
+          <button 
+            type="button" 
+            class="tab-btn" 
+            [class.active]="paymentMethod() === 'CLASSIC_CARD'"
+            (click)="paymentMethod.set('CLASSIC_CARD')">
+            <span class="material-icons">credit_card</span>
+            Credit/Debit Card
+          </button>
+          <button 
+            type="button" 
+            class="tab-btn" 
+            [class.active]="paymentMethod() === 'PAYPAL'"
+            (click)="paymentMethod.set('PAYPAL')">
+            <span class="material-symbols-outlined">paypal</span>
+            PayPal Checkout
+          </button>
+        </div>
+
+        <!-- Classic Card Form -->
+        <div *ngIf="paymentMethod() === 'CLASSIC_CARD'" class="payment-form animate-fade-in-up">
+          <div class="custom-input-group">
+            <label class="custom-input-label" for="cardHolder">Cardholder Name</label>
+            <input 
+              id="cardHolder"
+              type="text" 
+              class="custom-input" 
+              [class.input-error]="cardHolderTouched() && !isCardHolderValid()"
+              placeholder="e.g. John Doe"
+              [ngModel]="cardHolder()"
+              (ngModelChange)="cardHolder.set($event)"
+              (blur)="cardHolderTouched.set(true)"
+            />
+            <span class="validation-error" *ngIf="cardHolderTouched() && !isCardHolderValid()">
+              Name must contain at least 3 letters (only alphabetic).
+            </span>
+          </div>
+          <div class="custom-input-group">
+            <label class="custom-input-label" for="cardNumber">Card Number</label>
+            <input 
+              id="cardNumber"
+              type="text" 
+              class="custom-input" 
+              [class.input-error]="cardNumberTouched() && !isCardNumberValid()"
+              placeholder="4111 2222 3333 4444"
+              [ngModel]="cardNumber()"
+              (ngModelChange)="cardNumber.set($event)"
+              (blur)="cardNumberTouched.set(true)"
+            />
+            <span class="validation-error" *ngIf="cardNumberTouched() && !isCardNumberValid()">
+              Card number must be exactly 16 digits.
+            </span>
+          </div>
+          <div class="date-row">
+            <div class="custom-input-group">
+              <label class="custom-input-label" for="expDate">Expiry Date</label>
+              <input 
+                id="expDate"
+                type="text" 
+                class="custom-input" 
+                [class.input-error]="expirationDateTouched() && !isExpirationDateValid()"
+                placeholder="MM/YY"
+                [ngModel]="expirationDate()"
+                (ngModelChange)="expirationDate.set($event)"
+                (blur)="expirationDateTouched.set(true)"
+              />
+              <span class="validation-error" *ngIf="expirationDateTouched() && !isExpirationDateValid()">
+                Expiry must be a future date in MM/YY format.
+              </span>
+            </div>
+            <div class="custom-input-group">
+              <label class="custom-input-label" for="cvv">CVV Code</label>
+              <input 
+                id="cvv"
+                type="text" 
+                class="custom-input" 
+                [class.input-error]="cvvTouched() && !isCvvValid()"
+                placeholder="123"
+                [ngModel]="cvv()"
+                (ngModelChange)="cvv.set($event)"
+                (blur)="cvvTouched.set(true)"
+              />
+              <span class="validation-error" *ngIf="cvvTouched() && !isCvvValid()">
+                CVV must be 3 or 4 digits.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- PayPal Form -->
+        <div *ngIf="paymentMethod() === 'PAYPAL'" class="payment-form animate-fade-in-up">
+          <div class="custom-input-group">
+            <label class="custom-input-label" for="paypalEmail">PayPal Email Address</label>
+            <input 
+              id="paypalEmail"
+              type="email" 
+              class="custom-input" 
+              [class.input-error]="paypalEmailTouched() && !isPaypalEmailValid()"
+              placeholder="your-email@paypal.com"
+              [ngModel]="paypalEmail()"
+              (ngModelChange)="paypalEmail.set($event)"
+              (blur)="paypalEmailTouched.set(true)"
+            />
+            <span class="validation-error" *ngIf="paypalEmailTouched() && !isPaypalEmailValid()">
+              Please enter a valid email address.
+            </span>
+          </div>
+          <div class="paypal-info-box">
+            <span class="material-icons">info</span>
+            <p>You will authorize this transaction using your PayPal balance or linked account details upon completion.</p>
+          </div>
+        </div>
+
+        <!-- Error/Success inline status -->
+        <div *ngIf="errorMessage()" class="alert-box error small-margin">
+          <span class="material-icons">error_outline</span>
+          <p>{{ errorMessage() }}</p>
+        </div>
+        <div *ngIf="successMessage()" class="alert-box success small-margin">
+          <span class="material-icons">check_circle_outline</span>
+          <p>{{ successMessage() }}</p>
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="modal-footer">
+        <button class="outline-btn" (click)="closeBookingModal()" [disabled]="loading()">Cancel</button>
+        <button 
+          class="glow-btn" 
+          (click)="submitBooking()" 
+          [disabled]="loading() || !isFormValid()">
+          <span *ngIf="!loading()">Pay & Confirm Reservation</span>
+          <span *ngIf="loading()" class="spinner-inline"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,22 @@
+<nav class="navbar">
+  <a routerLink="/" class="logo">
+    <span class="material-symbols-outlined icon">domain</span>
+    <span class="gold-gradient-text">StayHub</span>
+  </a>
+
+  <ul class="nav-links">
+    <li><a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">Stanze</a></li>
+    <li *ngIf="isAuthenticated && !isAdmin"><a routerLink="/bookings/my" routerLinkActive="active" class="nav-item">Mie Prenotazioni</a></li>
+    <li *ngIf="isAuthenticated && isAdmin"><a routerLink="/admin" routerLinkActive="active" class="nav-item">Dashboard</a></li>
+  </ul>
+
+  <div class="auth-section">
+    <div class="user-badge" *ngIf="isAuthenticated">
+      <span class="material-symbols-outlined">account_circle</span>
+      <span class="name">{{ username }}</span>
+    </div>
+    <a *ngIf="!isAuthenticated" routerLink="/register" class="outline-btn register-link-btn" style="text-decoration: none;">Register</a>
+    <button *ngIf="!isAuthenticated" (click)="login()" class="glow-btn">Login</button>
+    <button *ngIf="isAuthenticated" (click)="logout()" class="outline-btn">Logout</button>
+  </div>
+</nav>

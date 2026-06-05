@@ -1,0 +1,78 @@
+{
+  "id": "stayhub",
+  "realm": "stayhub",
+  "enabled": true,
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "Administrator Role"
+      },
+      {
+        "name": "CUSTOMER",
+        "description": "Customer/Guest Role"
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "stayhub-frontend",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "webOrigins": [
+        "http://localhost:4200",
+        "*"
+      ],
+      "redirectUris": [
+        "http://localhost:4200/*",
+        "http://localhost:4200"
+      ],
+      "standardFlowEnabled": true
+    },
+    {
+      "clientId": "stayhub-backend",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "email": "admin@stayhub.com",
+      "firstName": "Admin",
+      "lastName": "StayHub",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "admin",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ADMIN"
+      ]
+    },
+    {
+      "username": "customer",
+      "enabled": true,
+      "email": "customer@stayhub.com",
+      "firstName": "John",
+      "lastName": "Doe",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "customer",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "CUSTOMER"
+      ]
+    }
+  ]
+}

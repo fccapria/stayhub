@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  mariadb:
+    image: mariadb:11.2
+    container_name: stayhub-mariadb
+    environment:
+      MARIADB_DATABASE: stayhub
+      MARIADB_USER: stayhub_user
+      MARIADB_PASSWORD: stayhub_password
+      MARIADB_ROOT_PASSWORD: stayhub_root_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.2
+    container_name: stayhub-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "9000:8080"
+    volumes:
+      - keycloak_data:/opt/keycloak/data
+      - ./stayhub-realm.json:/opt/keycloak/data/import/stayhub-realm.json
+
+volumes:
+  mariadb_data:
+  keycloak_data:

@@ -1,0 +1,232 @@
+<div class="admin-container">
+  <!-- Header -->
+  <section class="admin-header">
+    <h1 class="gold-gradient-text">Administration Console</h1>
+    <p class="subtitle">Overview of metrics, catalog rooms, and bookings across StayHub.</p>
+  </section>
+
+  <!-- Status Banners -->
+  <div *ngIf="errorMessage()" class="alert-box error animate-fade-in-up">
+    <span class="material-icons">error_outline</span>
+    <p>{{ errorMessage() }}</p>
+    <button class="close-alert-btn" (click)="errorMessage.set(null)">×</button>
+  </div>
+
+  <div *ngIf="successMessage()" class="alert-box success animate-fade-in-up">
+    <span class="material-icons">check_circle_outline</span>
+    <p>{{ successMessage() }}</p>
+    <button class="close-alert-btn" (click)="successMessage.set(null)">×</button>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading() && rooms().length === 0" class="loading-state">
+    <div class="spinner"></div>
+    <p>Assembling metrics and logs...</p>
+  </div>
+
+  <!-- Stats Widgets -->
+  <div *ngIf="!loading() || rooms().length > 0" class="stats-grid animate-fade-in-up">
+    <div class="stat-card glass-panel">
+      <span class="material-icons stat-icon">hotel</span>
+      <div class="stat-info">
+        <span class="stat-label">Total Rooms</span>
+        <span class="stat-value">{{ totalRooms() }}</span>
+      </div>
+    </div>
+    <div class="stat-card glass-panel">
+      <span class="material-icons stat-icon">book_online</span>
+      <div class="stat-info">
+        <span class="stat-label">Total Bookings</span>
+        <span class="stat-value">{{ totalBookingsCount() }}</span>
+      </div>
+    </div>
+    <div class="stat-card glass-panel">
+      <span class="material-icons stat-icon">task_alt</span>
+      <div class="stat-info">
+        <span class="stat-label">Confirmed Stays</span>
+        <span class="stat-value">{{ confirmedBookingsCount() }}</span>
+      </div>
+    </div>
+    <div class="stat-card glass-panel highlight-gold">
+      <span class="material-icons stat-icon gold-text">payments</span>
+      <div class="stat-info">
+        <span class="stat-label">Total Revenues</span>
+        <span class="stat-value gold-gradient-text">{{ totalRevenues() | currency:'EUR' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dashboard Main Grid -->
+  <div *ngIf="!loading() || rooms().length > 0" class="dashboard-grid animate-fade-in-up">
+    <!-- COLUMN 1: Rooms Catalog & Creation -->
+    <div class="dashboard-col">
+      <h2 class="col-title"><span class="material-icons">meeting_room</span> B&B Rooms Catalog</h2>
+      
+      <!-- List of existing rooms -->
+      <div class="rooms-list-panel glass-panel">
+        <h3>Current Rooms</h3>
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Capacity</th>
+                <th>Price/Night</th>
+                <th class="text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let room of rooms()">
+                <td>
+                  <strong>{{ room.name }}</strong>
+                </td>
+                <td>{{ room.capacity }} guests</td>
+                <td>{{ room.pricePerNight | currency:'EUR' }}</td>
+                <td class="text-right">
+                  <button 
+                    class="icon-action-btn delete-btn" 
+                    [disabled]="actionLoading()" 
+                    (click)="deleteRoom(room.id)"
+                    title="Delete Room">
+                    <span class="material-icons">delete_outline</span>
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="rooms().length === 0">
+                <td colspan="4" class="text-center text-muted">No rooms currently in catalog.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Add New Room Form -->
+      <div class="add-room-panel glass-panel">
+        <h3>Create New Room Listing</h3>
+        
+        <form (ngSubmit)="submitAddRoom()" #roomForm="ngForm">
+          <div class="custom-input-group">
+            <label class="custom-input-label" for="newRoomName">Room Name</label>
+            <input 
+              id="newRoomName"
+              type="text" 
+              class="custom-input" 
+              placeholder="e.g. Presidential Golden Suite"
+              [ngModel]="newRoomName()"
+              (ngModelChange)="newRoomName.set($event)"
+              name="newRoomName"
+              required
+            />
+          </div>
+
+          <div class="custom-input-group">
+            <label class="custom-input-label" for="newRoomDesc">Description</label>
+            <textarea 
+              id="newRoomDesc"
+              class="custom-input textarea" 
+              placeholder="Provide a luxurious description of the room and its amenities..."
+              [ngModel]="newRoomDescription()"
+              (ngModelChange)="newRoomDescription.set($event)"
+              name="newRoomDesc"
+              rows="4"
+              required
+            ></textarea>
+          </div>
+
+          <div class="date-row">
+            <div class="custom-input-group">
+              <label class="custom-input-label" for="newRoomCapacity">Capacity (Guests)</label>
+              <input 
+                id="newRoomCapacity"
+                type="number" 
+                class="custom-input" 
+                min="1"
+                [ngModel]="newRoomCapacity()"
+                (ngModelChange)="newRoomCapacity.set($event)"
+                name="newRoomCapacity"
+                required
+              />
+            </div>
+            <div class="custom-input-group">
+              <label class="custom-input-label" for="newRoomPrice">Price per Night (€)</label>
+              <input 
+                id="newRoomPrice"
+                type="number" 
+                class="custom-input" 
+                min="1"
+                [ngModel]="newRoomPrice()"
+                (ngModelChange)="newRoomPrice.set($event)"
+                name="newRoomPrice"
+                required
+              />
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
+            class="glow-btn submit-btn full-width" 
+            [disabled]="actionLoading() || !roomForm.valid">
+            <span *ngIf="!actionLoading()">Create Room Listing</span>
+            <span *ngIf="actionLoading()" class="spinner-inline"></span>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- COLUMN 2: Global Reservation Logs -->
+    <div class="dashboard-col">
+      <h2 class="col-title"><span class="material-icons">receipt_long</span> Master Booking Logs</h2>
+      
+      <div class="bookings-log-panel glass-panel">
+        <h3>Reservation Activity Feed</h3>
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Room</th>
+                <th>Dates</th>
+                <th>Price</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let booking of bookings()">
+                <td>
+                  <span class="booking-tag">#{{ booking.id }}</span>
+                </td>
+                <td>
+                  <div class="user-cell" [title]="booking.userId">
+                    <span class="material-icons text-muted">person</span>
+                    <span>{{ booking.userId.substring(0, 8) }}...</span>
+                  </div>
+                </td>
+                <td>
+                  <strong>{{ getRoomName(booking.roomId) }}</strong>
+                </td>
+                <td>
+                  <div class="date-cell">
+                    <span>In: {{ booking.checkIn | date:'shortDate' }}</span>
+                    <span>Out: {{ booking.checkOut | date:'shortDate' }}</span>
+                  </div>
+                </td>
+                <td>
+                  <strong>{{ booking.totalPrice | currency:'EUR' }}</strong>
+                </td>
+                <td>
+                  <span class="badge badge-mini" [ngClass]="booking.status.toLowerCase()">
+                    {{ booking.status }}
+                  </span>
+                </td>
+              </tr>
+              <tr *ngIf="bookings().length === 0">
+                <td colspan="6" class="text-center text-muted">No reservations booked on StayHub yet.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
