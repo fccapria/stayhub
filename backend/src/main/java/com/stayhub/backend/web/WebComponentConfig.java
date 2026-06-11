@@ -16,13 +16,4 @@ public class WebComponentConfig {
         registrationBean.setOrder(1);
         return registrationBean;
     }
-
-    @Bean
-    public ServletRegistrationBean<ReceiptExportServlet> receiptServletRegistration(ReceiptExportServlet receiptServlet) {
-        ServletRegistrationBean<ReceiptExportServlet> registrationBean = new ServletRegistrationBean<>(
-                receiptServlet, "/api/v1/exports/receipt"
-        );
-        registrationBean.setLoadOnStartup(1);
-        return registrationBean;
-    }
 }

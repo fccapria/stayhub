@@ -37,4 +37,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query("SELECT b FROM Booking b JOIN FETCH b.room JOIN FETCH b.user WHERE b.room.owner.id = :ownerId")
     List<Booking> findByRoomOwnerId(@Param("ownerId") String ownerId);
+
+    List<Booking> findByRoomIdAndStatusNot(Long roomId, com.stayhub.backend.entity.BookingStatus status);
 }

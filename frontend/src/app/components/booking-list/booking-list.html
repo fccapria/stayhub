@@ -1,8 +1,8 @@
 <div class="bookings-container">
   <!-- Header -->
   <section class="page-header">
-    <h1 class="gold-gradient-text">My Reservations</h1>
-    <p class="subtitle">Review your stay history, track bookings, and retrieve invoices.</p>
+    <h1 class="gold-gradient-text">Le Mie Prenotazioni</h1>
+    <p class="subtitle">Visualizza la cronologia dei tuoi soggiorni, traccia le prenotazioni e scarica le fatture.</p>
   </section>
 
   <!-- Alerts -->
@@ -21,7 +21,7 @@
   <!-- Loading State -->
   <div *ngIf="loading() && bookings().length === 0" class="loading-state">
     <div class="spinner"></div>
-    <p>Retrieving your reservation history...</p>
+    <p>Recupero della cronologia delle prenotazioni...</p>
   </div>
 
   <!-- Bookings List -->
@@ -51,21 +51,21 @@
         <!-- Badges & References -->
         <div class="booking-meta">
           <div class="status-group">
-            <span class="meta-label">Status:</span>
+            <span class="meta-label">Stato:</span>
             <span class="badge" [ngClass]="booking.status.toLowerCase()">
-              {{ booking.status }}
+              {{ translateStatus(booking.status) }}
             </span>
           </div>
 
           <div class="status-group">
-            <span class="meta-label">Payment:</span>
+            <span class="meta-label">Pagamento:</span>
             <span class="badge" [ngClass]="booking.paymentStatus.toLowerCase()">
-              {{ booking.paymentStatus }}
+              {{ translatePaymentStatus(booking.paymentStatus) }}
             </span>
           </div>
 
           <div class="status-group ref" *ngIf="booking.transactionReference">
-            <span class="meta-label">Reference:</span>
+            <span class="meta-label">Riferimento:</span>
             <code>{{ booking.transactionReference }}</code>
           </div>
         </div>
@@ -74,7 +74,7 @@
       <!-- Card Right / Sidebar: Financial & Actions -->
       <div class="booking-card-sidebar">
         <div class="price-section">
-          <span class="price-title">Total Price</span>
+          <span class="price-title">Prezzo Totale</span>
           <span class="price-value gold-gradient-text">{{ booking.totalPrice | currency:'EUR' }}</span>
         </div>
 
@@ -86,7 +86,7 @@
             target="_blank" 
             class="glow-btn download-btn">
             <span class="material-icons">receipt_long</span>
-            Download Invoice
+            Scarica Fattura
           </a>
 
           <!-- Cancel Reservation -->
@@ -95,13 +95,13 @@
             class="outline-btn cancel-btn" 
             (click)="confirmCancelBooking(booking)">
             <span class="material-icons">close</span>
-            Cancel Stay
+            Annulla Soggiorno
           </button>
 
           <!-- Cancelled State Placeholder -->
           <div *ngIf="booking.status === 'CANCELLED'" class="cancelled-placeholder">
             <span class="material-icons">event_busy</span>
-            Cancelled
+            Cancellata
           </div>
         </div>
       </div>
@@ -111,32 +111,32 @@
   <!-- Empty State -->
   <div *ngIf="!loading() && bookings().length === 0" class="empty-state glass-panel">
     <span class="material-icons empty-icon">book_online</span>
-    <h3>No Reservations Found</h3>
-    <p>You do not have any bookings registered under this account yet. Browse our rooms and book your first stay!</p>
-    <a href="/" class="glow-btn browse-btn">Browse Luxury Rooms</a>
+    <h3>Nessuna Prenotazione Trovata</h3>
+    <p>Non hai ancora prenotazioni registrate su questo account. Sfoglia le nostre camere e prenota il tuo primo soggiorno!</p>
+    <a href="/" class="glow-btn browse-btn">Sfoglia Camere di Lusso</a>
   </div>
 
   <!-- Cancellation Confirmation Modal -->
   <div *ngIf="bookingToCancel() as booking" class="modal-backdrop" (click)="closeCancelModal()">
     <div class="modal-card glass-panel cancel-dialog" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h2>Confirm Cancellation</h2>
+        <h2>Conferma Cancellazione</h2>
         <button class="close-btn" (click)="closeCancelModal()">&times;</button>
       </div>
 
       <div class="modal-body text-center">
         <span class="material-icons warning-icon">warning_amber</span>
-        <p class="modal-prompt">Are you sure you want to cancel your stay at <strong>{{ getRoomName(booking.roomId) }}</strong>?</p>
-        <p class="modal-subtext">This action will change your reservation status to CANCELLED and void your booking dates ({{ booking.checkIn | date:'shortDate' }} to {{ booking.checkOut | date:'shortDate' }}).</p>
+        <p class="modal-prompt">Sei sicuro di voler annullare il tuo soggiorno presso <strong>{{ getRoomName(booking.roomId) }}</strong>?</p>
+        <p class="modal-subtext">Questa azione cambierà lo stato della tua prenotazione in CANCELLATA e annullerà le date del soggiorno (da {{ booking.checkIn | date:'shortDate' }} a {{ booking.checkOut | date:'shortDate' }}).</p>
       </div>
 
       <div class="modal-footer">
-        <button class="outline-btn" (click)="closeCancelModal()" [disabled]="cancelLoading()">Keep Reservation</button>
+        <button class="outline-btn" (click)="closeCancelModal()" [disabled]="cancelLoading()">Mantieni Prenotazione</button>
         <button 
           class="glow-btn danger-btn" 
           (click)="executeCancelBooking()" 
           [disabled]="cancelLoading()">
-          <span *ngIf="!cancelLoading()">Confirm Cancellation</span>
+          <span *ngIf="!cancelLoading()">Conferma Cancellazione</span>
           <span *ngIf="cancelLoading()" class="spinner-inline"></span>
         </button>
       </div>

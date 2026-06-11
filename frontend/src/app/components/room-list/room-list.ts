@@ -5,6 +5,17 @@ import { RoomService, RoomDTO } from '../../services/room.service';
 import { BookingService, BookingRequestDTO } from '../../services/booking.service';
 import { AuthService } from '../../services/auth.service';
 
+export interface CalendarDay {
+  date: Date;
+  isCurrentMonth: boolean;
+  isToday: boolean;
+  isPast: boolean;
+  isOccupied: boolean;
+  isSelectedCheckIn: boolean;
+  isSelectedCheckOut: boolean;
+  isInSelectedRange: boolean;
+}
+
 @Component({
   selector: 'app-room-list',
   standalone: true,
@@ -24,6 +35,12 @@ export class RoomListComponent implements OnInit {
   checkIn = signal<string>('');
   checkOut = signal<string>('');
   paymentMethod = signal<'CLASSIC_CARD' | 'PAYPAL'>('CLASSIC_CARD');
+
+  // Calendar Signals
+  occupiedRanges = signal<{ checkIn: string; checkOut: string }[]>([]);
+  currentCalendarYear = signal<number>(new Date().getFullYear());
+  currentCalendarMonth = signal<number>(new Date().getMonth());
+  bookingStep = signal<1 | 2>(1);
 
   // Payment Form Fields
   cardHolder = signal<string>('');
@@ -85,6 +102,65 @@ export class RoomListComponent implements OnInit {
     checkInDate.setHours(0, 0, 0, 0);
 
     return checkInDate.getTime() >= today.getTime() && checkOutDate.getTime() > checkInDate.getTime();
+  });
+
+  calendarMonthName = computed(() => {
+    const months = [
+      'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+      'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+    ];
+    return `${months[this.currentCalendarMonth()]} ${this.currentCalendarYear()}`;
+  });
+
+  calendarDays = computed(() => {
+    const year = this.currentCalendarYear();
+    const month = this.currentCalendarMonth();
+    const inStr = this.checkIn();
+    const outStr = this.checkOut();
+    const checkInDate = inStr ? new Date(inStr) : null;
+    const checkOutDate = outStr ? new Date(outStr) : null;
+    if (checkInDate) checkInDate.setHours(0, 0, 0, 0);
+    if (checkOutDate) checkOutDate.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Days in current month
+    const firstDayOfMonth = new Date(year, month, 1);
+    const lastDayOfMonth = new Date(year, month + 1, 0);
+    
+    // Day of week of first day: 0 (Sun) to 6 (Sat)
+    // We want Monday (1) to Sunday (7)
+    let startDayOfWeek = firstDayOfMonth.getDay();
+    if (startDayOfWeek === 0) startDayOfWeek = 7;
+
+    const days: CalendarDay[] = [];
+
+    // Padding days from previous month
+    const prevMonthLastDay = new Date(year, month, 0).getDate();
+    for (let i = startDayOfWeek - 1; i > 0; i--) {
+      const prevDate = new Date(year, month - 1, prevMonthLastDay - i + 1);
+      prevDate.setHours(0, 0, 0, 0);
+      days.push(this.createCalendarDay(prevDate, false, today, checkInDate, checkOutDate));
+    }
+
+    // Days of current month
+    const totalDays = lastDayOfMonth.getDate();
+    for (let i = 1; i <= totalDays; i++) {
+      const currentDate = new Date(year, month, i);
+      currentDate.setHours(0, 0, 0, 0);
+      days.push(this.createCalendarDay(currentDate, true, today, checkInDate, checkOutDate));
+    }
+
+    // Padding days from next month to complete the grid (usually 42 cells or 6 rows)
+    const remainingCells = 42 - days.length;
+    for (let i = 1; i <= remainingCells; i++) {
+      const nextDate = new Date(year, month + 1, i);
+      nextDate.setHours(0, 0, 0, 0);
+      days.push(this.createCalendarDay(nextDate, false, today, checkInDate, checkOutDate));
+    }
+
+    return days;
   });
 
   isCardHolderValid = computed(() => {
@@ -150,7 +226,7 @@ export class RoomListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to load rooms:', err);
-        this.errorMessage.set('Could not fetch room listings. Make sure the backend is running.');
+        this.errorMessage.set('Impossibile recuperare l\'elenco delle camere. Assicurati che il backend sia attivo.');
         this.loading.set(false);
       }
     });
@@ -171,14 +247,9 @@ export class RoomListComponent implements OnInit {
     }
 
     this.selectedRoom.set(room);
-    // Set default check-in tomorrow, checkout day after
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dayAfter = new Date();
-    dayAfter.setDate(dayAfter.getDate() + 2);
-
-    this.checkIn.set(tomorrow.toISOString().split('T')[0]);
-    this.checkOut.set(dayAfter.toISOString().split('T')[0]);
+    this.checkIn.set('');
+    this.checkOut.set('');
+    this.bookingStep.set(1);
 
     // Reset forms & alerts
     this.errorMessage.set(null);
@@ -199,6 +270,148 @@ export class RoomListComponent implements OnInit {
     this.paypalEmailTouched.set(false);
     this.checkInTouched.set(false);
     this.checkOutTouched.set(false);
+
+    // Reset calendar view to current month
+    const now = new Date();
+    this.currentCalendarYear.set(now.getFullYear());
+    this.currentCalendarMonth.set(now.getMonth());
+
+    if (room.id) {
+      this.roomService.getOccupiedDates(room.id).subscribe({
+        next: (ranges) => {
+          this.occupiedRanges.set(ranges);
+        },
+        error: (err) => {
+          console.error('Failed to load occupied dates:', err);
+          this.occupiedRanges.set([]);
+        }
+      });
+    }
+  }
+
+  goToPayment(): void {
+    if (this.isDatesValid() && this.numberOfNights() > 0) {
+      this.bookingStep.set(2);
+      if (this.paymentMethod() === 'PAYPAL') {
+        setTimeout(() => {
+          this.initPaypalButtons();
+        }, 0);
+      }
+    }
+  }
+
+  // Calendar Helper Methods
+  private createCalendarDay(
+    date: Date, 
+    isCurrentMonth: boolean, 
+    today: Date, 
+    checkInDate: Date | null, 
+    checkOutDate: Date | null
+  ): CalendarDay {
+    const dateTime = date.getTime();
+    const todayTime = today.getTime();
+    
+    const isPast = dateTime < todayTime;
+    const isOccupied = this.isDateOccupied(date);
+    
+    const isSelectedCheckIn = checkInDate !== null && dateTime === checkInDate.getTime();
+    const isSelectedCheckOut = checkOutDate !== null && dateTime === checkOutDate.getTime();
+    
+    const isInSelectedRange = checkInDate !== null && checkOutDate !== null && 
+                              dateTime > checkInDate.getTime() && dateTime < checkOutDate.getTime();
+
+    return {
+      date,
+      isCurrentMonth,
+      isToday: dateTime === todayTime,
+      isPast,
+      isOccupied,
+      isSelectedCheckIn,
+      isSelectedCheckOut,
+      isInSelectedRange
+    };
+  }
+
+  isDateOccupied(date: Date): boolean {
+    const dTime = date.getTime();
+    return this.occupiedRanges().some(range => {
+      const inTime = new Date(range.checkIn).setHours(0, 0, 0, 0);
+      const outTime = new Date(range.checkOut).setHours(0, 0, 0, 0);
+      return dTime >= inTime && dTime < outTime;
+    });
+  }
+
+  selectDate(day: CalendarDay): void {
+    if (day.isPast || day.isOccupied) return;
+
+    const inStr = this.checkIn();
+    const outStr = this.checkOut();
+
+    if (!inStr || (inStr && outStr)) {
+      this.checkIn.set(this.formatDate(day.date));
+      this.checkOut.set('');
+      this.checkInTouched.set(true);
+      this.checkOutTouched.set(false);
+    } else {
+      const checkInDate = new Date(inStr);
+      const clickedDate = day.date;
+
+      if (clickedDate.getTime() === checkInDate.getTime()) {
+        this.checkIn.set('');
+        this.checkOut.set('');
+      } else if (clickedDate.getTime() < checkInDate.getTime()) {
+        this.checkIn.set(this.formatDate(clickedDate));
+      } else {
+        if (this.hasOccupiedDatesBetween(checkInDate, clickedDate)) {
+          this.checkIn.set(this.formatDate(clickedDate));
+        } else {
+          this.checkOut.set(this.formatDate(clickedDate));
+          this.checkOutTouched.set(true);
+        }
+      }
+    }
+  }
+
+  hasOccupiedDatesBetween(start: Date, end: Date): boolean {
+    const endTime = end.getTime();
+    let temp = new Date(start);
+    temp.setDate(temp.getDate() + 1);
+    while (temp.getTime() < endTime) {
+      if (this.isDateOccupied(temp)) {
+        return true;
+      }
+      temp.setDate(temp.getDate() + 1);
+    }
+    return false;
+  }
+
+  formatDate(d: Date): string {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  prevMonth(): void {
+    const currentMonth = this.currentCalendarMonth();
+    const currentYear = this.currentCalendarYear();
+    if (currentMonth === 0) {
+      this.currentCalendarMonth.set(11);
+      this.currentCalendarYear.set(currentYear - 1);
+    } else {
+      this.currentCalendarMonth.set(currentMonth - 1);
+    }
+  }
+
+  nextMonth(): void {
+    const currentMonth = this.currentCalendarMonth();
+    const currentYear = this.currentCalendarYear();
+    if (currentMonth === 11) {
+      this.currentCalendarMonth.set(0);
+      this.currentCalendarYear.set(currentYear + 1);
+    } else {
+      this.currentCalendarMonth.set(currentMonth + 1);
+    }
   }
 
   setPaymentMethod(method: 'CLASSIC_CARD' | 'PAYPAL'): void {
@@ -283,21 +496,21 @@ export class RoomListComponent implements OnInit {
               this.submitBooking();
             },
             onCancel: (data: any) => {
-              this.errorMessage.set('Payment cancelled by user.');
+              this.errorMessage.set('Pagamento annullato dall\'utente.');
             },
             onError: (err: any) => {
               console.error('PayPal Smart Buttons error:', err);
-              this.errorMessage.set('An error occurred during PayPal checkout. Please try again.');
+              this.errorMessage.set('Si è verificato un errore durante il pagamento con PayPal. Riprova.');
             }
           }).render('#paypal-button-container');
         } else {
-          this.errorMessage.set('PayPal SDK could not be initialized.');
+          this.errorMessage.set('Impossibile inizializzare l\'SDK di PayPal.');
         }
       })
       .catch(err => {
         console.error('Failed to load PayPal SDK script:', err);
         this.paypalSdkLoading.set(false);
-        this.errorMessage.set('Failed to load PayPal SDK. Please check your internet connection.');
+        this.errorMessage.set('Impossibile caricare l\'SDK di PayPal. Controlla la tua connessione internet.');
       });
   }
 
@@ -332,7 +545,7 @@ export class RoomListComponent implements OnInit {
     this.bookingService.createBooking(request).subscribe({
       next: (response) => {
         this.loading.set(false);
-        this.successMessage.set('Booking reservation successfully confirmed and paid!');
+        this.successMessage.set('Prenotazione confermata e pagata con successo!');
         setTimeout(() => {
           this.closeBookingModal();
         }, 2500);
@@ -340,7 +553,7 @@ export class RoomListComponent implements OnInit {
       error: (err) => {
         this.loading.set(false);
         console.error('Booking failed:', err);
-        const errMsg = err.error?.message || 'Booking failed. Please check your details and try again.';
+        const errMsg = err.error?.message || 'Prenotazione fallita. Controlla i tuoi dati e riprova.';
         this.errorMessage.set(errMsg);
       }
     });

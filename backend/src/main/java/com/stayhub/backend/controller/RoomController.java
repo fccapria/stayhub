@@ -50,4 +50,9 @@ public class RoomController {
         roomService.deleteRoom(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/{id}/occupied")
+    public ResponseEntity<List<com.stayhub.backend.dto.OccupiedRangeDTO>> getOccupiedRanges(@PathVariable Long id) {
+        return ResponseEntity.ok(roomService.getOccupiedRanges(id));
+    }
 }

@@ -74,7 +74,7 @@ export class RegisterComponent {
     this.http.post('http://localhost:8080/api/v1/users/register', payload).subscribe({
       next: () => {
         this.loading.set(false);
-        this.successMessage.set('Account created successfully! Redirecting you to login...');
+        this.successMessage.set('Account creato con successo! Reindirizzamento al login...');
         
         setTimeout(() => {
           if (isPlatformBrowser(this.platformId)) {
@@ -86,7 +86,7 @@ export class RegisterComponent {
       error: (err) => {
         this.loading.set(false);
         console.error('Registration failed:', err);
-        const errMsg = err.error?.message || 'Could not create account. The username or email might already be taken.';
+        const errMsg = err.error?.message || 'Impossibile creare l\'account. L\'username o l\'email potrebbero essere già in uso.';
         this.errorMessage.set(errMsg);
       }
     });

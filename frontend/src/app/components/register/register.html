@@ -1,8 +1,8 @@
 <div class="register-container">
   <div class="register-card glass-panel animate-fade-in-up">
     <div class="register-header">
-      <h1 class="gold-gradient-text">Create Account</h1>
-      <p class="subtitle">Join StayHub to book and manage luxury reservations.</p>
+      <h1 class="gold-gradient-text">Crea Account</h1>
+      <p class="subtitle">Unisciti a StayHub per prenotare e gestire soggiorni di lusso.</p>
     </div>
 
     <!-- Alert Box -->
@@ -18,7 +18,7 @@
     <form (ngSubmit)="submitRegister()" #registerForm="ngForm">
       <!-- Role Switcher -->
       <div class="custom-input-group">
-        <span class="custom-input-label">Account Role</span>
+        <span class="custom-input-label">Ruolo dell'Account</span>
         <div class="role-selector">
           <button 
             type="button" 
@@ -26,7 +26,7 @@
             [class.active]="role() === 'CUSTOMER'"
             (click)="role.set('CUSTOMER')">
             <span class="material-icons">person</span>
-            Customer / Guest
+            Cliente / Ospite
           </button>
           <button 
             type="button" 
@@ -34,7 +34,7 @@
             [class.active]="role() === 'ADMIN'"
             (click)="role.set('ADMIN')">
             <span class="material-icons">admin_panel_settings</span>
-            Administrator
+            Amministratore
           </button>
         </div>
       </div>
@@ -47,7 +47,7 @@
           type="text" 
           class="custom-input" 
           [class.input-error]="usernameTouched() && !isUsernameValid()"
-          placeholder="Choose a username"
+          placeholder="Scegli un username"
           [ngModel]="username()"
           (ngModelChange)="username.set($event)"
           (blur)="usernameTouched.set(true)"
@@ -55,18 +55,18 @@
           required
         />
         <span class="validation-error" *ngIf="usernameTouched() && !isUsernameValid()">
-          Username must be at least 3 characters.
+          L'username deve contenere almeno 3 caratteri.
         </span>
       </div>
 
       <div class="custom-input-group">
-        <label class="custom-input-label" for="regEmail">Email Address</label>
+        <label class="custom-input-label" for="regEmail">Indirizzo Email</label>
         <input 
           id="regEmail"
           type="email" 
           class="custom-input" 
           [class.input-error]="emailTouched() && !isEmailValid()"
-          placeholder="your-email@address.com"
+          placeholder="tua-email@indirizzo.com"
           [ngModel]="email()"
           (ngModelChange)="email.set($event)"
           (blur)="emailTouched.set(true)"
@@ -74,20 +74,20 @@
           required
         />
         <span class="validation-error" *ngIf="emailTouched() && !isEmailValid()">
-          Please enter a valid email address.
+          Inserisci un indirizzo email valido.
         </span>
       </div>
 
       <!-- First & Last Name -->
       <div class="date-row">
         <div class="custom-input-group">
-          <label class="custom-input-label" for="regFirstName">First Name</label>
+          <label class="custom-input-label" for="regFirstName">Nome</label>
           <input 
             id="regFirstName"
             type="text" 
             class="custom-input" 
             [class.input-error]="firstNameTouched() && !isFirstNameValid()"
-            placeholder="John"
+            placeholder="Mario"
             [ngModel]="firstName()"
             (ngModelChange)="firstName.set($event)"
             (blur)="firstNameTouched.set(true)"
@@ -95,17 +95,17 @@
             required
           />
           <span class="validation-error" *ngIf="firstNameTouched() && !isFirstNameValid()">
-            First name is required.
+            Il nome è obbligatorio.
           </span>
         </div>
         <div class="custom-input-group">
-          <label class="custom-input-label" for="regLastName">Last Name</label>
+          <label class="custom-input-label" for="regLastName">Cognome</label>
           <input 
             id="regLastName"
             type="text" 
             class="custom-input" 
             [class.input-error]="lastNameTouched() && !isLastNameValid()"
-            placeholder="Doe"
+            placeholder="Rossi"
             [ngModel]="lastName()"
             (ngModelChange)="lastName.set($event)"
             (blur)="lastNameTouched.set(true)"
@@ -113,7 +113,7 @@
             required
           />
           <span class="validation-error" *ngIf="lastNameTouched() && !isLastNameValid()">
-            Last name is required.
+            Il cognome è obbligatorio.
           </span>
         </div>
       </div>
@@ -134,7 +134,7 @@
           required
         />
         <span class="validation-error" *ngIf="passwordTouched() && !isPasswordValid()">
-          Password must be at least 6 characters.
+          La password deve contenere almeno 6 caratteri.
         </span>
       </div>
 
@@ -142,13 +142,13 @@
         type="submit" 
         class="glow-btn submit-btn full-width" 
         [disabled]="loading() || !isFormValid()">
-        <span *ngIf="!loading()">Register & Sign In</span>
+        <span *ngIf="!loading()">Registrati & Accedi</span>
         <span *ngIf="loading()" class="spinner-inline"></span>
       </button>
 
       <p class="login-footer">
-        Already have an account? 
-        <a href="javascript:void(0)" (click)="authService.login()" class="login-link">Sign In</a>
+        Hai già un account? 
+        <a href="javascript:void(0)" (click)="authService.login()" class="login-link">Accedi</a>
       </p>
     </form>
   </div>

@@ -70,14 +70,14 @@ export class AdminDashboardComponent implements OnInit {
           },
           error: (err) => {
             console.error('Failed to load owner bookings:', err);
-            this.errorMessage.set('Could not fetch your reservation records.');
+            this.errorMessage.set('Impossibile recuperare i registri delle prenotazioni.');
             this.loading.set(false);
           }
         });
       },
       error: (err) => {
         console.error('Failed to load owner rooms:', err);
-        this.errorMessage.set('Could not fetch your B&B rooms.');
+        this.errorMessage.set('Impossibile recuperare le camere del tuo B&B.');
         this.loading.set(false);
       }
     });
@@ -85,7 +85,7 @@ export class AdminDashboardComponent implements OnInit {
 
   getRoomName(roomId: number): string {
     const room = this.rooms().find((r) => r.id === roomId);
-    return room ? room.name : `Room #${roomId}`;
+    return room ? room.name : `Camera #${roomId}`;
   }
 
   submitAddRoom(): void {
@@ -95,7 +95,7 @@ export class AdminDashboardComponent implements OnInit {
     const price = this.newRoomPrice();
 
     if (!name || !description || capacity <= 0 || price <= 0) {
-      this.errorMessage.set('Please fill out all fields with valid positive values.');
+      this.errorMessage.set('Per favore compila tutti i campi con valori positivi validi.');
       return;
     }
 
@@ -112,7 +112,7 @@ export class AdminDashboardComponent implements OnInit {
     this.roomService.createRoom(room).subscribe({
       next: (createdRoom) => {
         this.actionLoading.set(false);
-        this.successMessage.set(`Room "${createdRoom.name}" was successfully registered.`);
+        this.successMessage.set(`La camera "${createdRoom.name}" è stata registrata con successo.`);
         this.rooms.update((prev) => [...prev, createdRoom]);
         
         // Reset form
@@ -128,7 +128,7 @@ export class AdminDashboardComponent implements OnInit {
       error: (err) => {
         this.actionLoading.set(false);
         console.error('Failed to create room:', err);
-        const errMsg = err.error?.message || 'Failed to create room. Please verify details.';
+        const errMsg = err.error?.message || 'Impossibile creare la camera. Verifica i dettagli.';
         this.errorMessage.set(errMsg);
       }
     });
@@ -137,7 +137,7 @@ export class AdminDashboardComponent implements OnInit {
   deleteRoom(roomId: number | undefined): void {
     if (roomId === undefined) return;
     
-    if (!confirm('Are you sure you want to delete this room? This might cause foreign key constraints errors if bookings already exist.')) {
+    if (!confirm('Sei sicuro di voler eliminare questa camera? Ciò potrebbe causare errori di vincolo di chiave esterna se esistono già prenotazioni.')) {
       return;
     }
 
@@ -147,7 +147,7 @@ export class AdminDashboardComponent implements OnInit {
     this.roomService.deleteRoom(roomId).subscribe({
       next: () => {
         this.actionLoading.set(false);
-        this.successMessage.set('Room successfully removed.');
+        this.successMessage.set('Camera rimossa con successo.');
         this.rooms.update((prev) => prev.filter((r) => r.id !== roomId));
         
         setTimeout(() => {
@@ -157,7 +157,7 @@ export class AdminDashboardComponent implements OnInit {
       error: (err) => {
         this.actionLoading.set(false);
         console.error('Failed to delete room:', err);
-        const errMsg = err.error?.message || 'Could not delete room. It might be linked to active bookings.';
+        const errMsg = err.error?.message || 'Impossibile eliminare la camera. Potrebbe essere collegata a prenotazioni attive.';
         this.errorMessage.set(errMsg);
         
         setTimeout(() => {
@@ -165,5 +165,14 @@ export class AdminDashboardComponent implements OnInit {
         }, 5000);
       }
     });
+  }
+
+  translateStatus(status: string): string {
+    switch(status) {
+      case 'CONFIRMED': return 'Confermata';
+      case 'CANCELLED': return 'Cancellata';
+      case 'PENDING': return 'In attesa';
+      default: return status;
+    }
   }
 }

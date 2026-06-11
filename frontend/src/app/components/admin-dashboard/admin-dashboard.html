@@ -1,8 +1,8 @@
 <div class="admin-container">
   <!-- Header -->
   <section class="admin-header">
-    <h1 class="gold-gradient-text">Administration Console</h1>
-    <p class="subtitle">Overview of metrics, catalog rooms, and bookings across StayHub.</p>
+    <h1 class="gold-gradient-text">Console di Amministrazione</h1>
+    <p class="subtitle">Panoramica delle metriche, del catalogo delle camere e delle prenotazioni su StayHub.</p>
   </section>
 
   <!-- Status Banners -->
@@ -21,7 +21,7 @@
   <!-- Loading State -->
   <div *ngIf="loading() && rooms().length === 0" class="loading-state">
     <div class="spinner"></div>
-    <p>Assembling metrics and logs...</p>
+    <p>Caricamento metriche e registri...</p>
   </div>
 
   <!-- Stats Widgets -->
@@ -29,28 +29,28 @@
     <div class="stat-card glass-panel">
       <span class="material-icons stat-icon">hotel</span>
       <div class="stat-info">
-        <span class="stat-label">Total Rooms</span>
+        <span class="stat-label">Camere Totali</span>
         <span class="stat-value">{{ totalRooms() }}</span>
       </div>
     </div>
     <div class="stat-card glass-panel">
       <span class="material-icons stat-icon">book_online</span>
       <div class="stat-info">
-        <span class="stat-label">Total Bookings</span>
+        <span class="stat-label">Prenotazioni Totali</span>
         <span class="stat-value">{{ totalBookingsCount() }}</span>
       </div>
     </div>
     <div class="stat-card glass-panel">
       <span class="material-icons stat-icon">task_alt</span>
       <div class="stat-info">
-        <span class="stat-label">Confirmed Stays</span>
+        <span class="stat-label">Soggiorni Confermati</span>
         <span class="stat-value">{{ confirmedBookingsCount() }}</span>
       </div>
     </div>
     <div class="stat-card glass-panel highlight-gold">
       <span class="material-icons stat-icon gold-text">payments</span>
       <div class="stat-info">
-        <span class="stat-label">Total Revenues</span>
+        <span class="stat-label">Ricavi Totali</span>
         <span class="stat-value gold-gradient-text">{{ totalRevenues() | currency:'EUR' }}</span>
       </div>
     </div>
@@ -60,19 +60,19 @@
   <div *ngIf="!loading() || rooms().length > 0" class="dashboard-grid animate-fade-in-up">
     <!-- COLUMN 1: Rooms Catalog & Creation -->
     <div class="dashboard-col">
-      <h2 class="col-title"><span class="material-icons">meeting_room</span> B&B Rooms Catalog</h2>
+      <h2 class="col-title"><span class="material-icons">meeting_room</span> Catalogo Camere B&B</h2>
       
       <!-- List of existing rooms -->
       <div class="rooms-list-panel glass-panel">
-        <h3>Current Rooms</h3>
+        <h3>Camere Disponibili</h3>
         <div class="table-container">
           <table class="admin-table">
             <thead>
               <tr>
-                <th>Name</th>
-                <th>Capacity</th>
-                <th>Price/Night</th>
-                <th class="text-right">Actions</th>
+                <th>Nome</th>
+                <th>Capacità</th>
+                <th>Prezzo/Notte</th>
+                <th class="text-right">Azioni</th>
               </tr>
             </thead>
             <tbody>
@@ -80,20 +80,20 @@
                 <td>
                   <strong>{{ room.name }}</strong>
                 </td>
-                <td>{{ room.capacity }} guests</td>
+                <td>{{ room.capacity }} ospiti</td>
                 <td>{{ room.pricePerNight | currency:'EUR' }}</td>
                 <td class="text-right">
                   <button 
                     class="icon-action-btn delete-btn" 
                     [disabled]="actionLoading()" 
                     (click)="deleteRoom(room.id)"
-                    title="Delete Room">
+                    title="Elimina Camera">
                     <span class="material-icons">delete_outline</span>
                   </button>
                 </td>
               </tr>
               <tr *ngIf="rooms().length === 0">
-                <td colspan="4" class="text-center text-muted">No rooms currently in catalog.</td>
+                <td colspan="4" class="text-center text-muted">Nessuna camera presente nel catalogo.</td>
               </tr>
             </tbody>
           </table>
@@ -102,16 +102,16 @@
 
       <!-- Add New Room Form -->
       <div class="add-room-panel glass-panel">
-        <h3>Create New Room Listing</h3>
+        <h3>Crea una Nuova Camera</h3>
         
         <form (ngSubmit)="submitAddRoom()" #roomForm="ngForm">
           <div class="custom-input-group">
-            <label class="custom-input-label" for="newRoomName">Room Name</label>
+            <label class="custom-input-label" for="newRoomName">Nome Camera</label>
             <input 
               id="newRoomName"
               type="text" 
               class="custom-input" 
-              placeholder="e.g. Presidential Golden Suite"
+              placeholder="es. Suite Presidenziale Oro"
               [ngModel]="newRoomName()"
               (ngModelChange)="newRoomName.set($event)"
               name="newRoomName"
@@ -120,11 +120,11 @@
           </div>
 
           <div class="custom-input-group">
-            <label class="custom-input-label" for="newRoomDesc">Description</label>
+            <label class="custom-input-label" for="newRoomDesc">Descrizione</label>
             <textarea 
               id="newRoomDesc"
               class="custom-input textarea" 
-              placeholder="Provide a luxurious description of the room and its amenities..."
+              placeholder="Fornisci una descrizione lussuosa della camera e dei suoi servizi..."
               [ngModel]="newRoomDescription()"
               (ngModelChange)="newRoomDescription.set($event)"
               name="newRoomDesc"
@@ -135,7 +135,7 @@
 
           <div class="date-row">
             <div class="custom-input-group">
-              <label class="custom-input-label" for="newRoomCapacity">Capacity (Guests)</label>
+              <label class="custom-input-label" for="newRoomCapacity">Capacità (Ospiti)</label>
               <input 
                 id="newRoomCapacity"
                 type="number" 
@@ -148,7 +148,7 @@
               />
             </div>
             <div class="custom-input-group">
-              <label class="custom-input-label" for="newRoomPrice">Price per Night (€)</label>
+              <label class="custom-input-label" for="newRoomPrice">Prezzo per Notte (€)</label>
               <input 
                 id="newRoomPrice"
                 type="number" 
@@ -166,7 +166,7 @@
             type="submit" 
             class="glow-btn submit-btn full-width" 
             [disabled]="actionLoading() || !roomForm.valid">
-            <span *ngIf="!actionLoading()">Create Room Listing</span>
+            <span *ngIf="!actionLoading()">Crea Camera</span>
             <span *ngIf="actionLoading()" class="spinner-inline"></span>
           </button>
         </form>
@@ -175,20 +175,20 @@
 
     <!-- COLUMN 2: Global Reservation Logs -->
     <div class="dashboard-col">
-      <h2 class="col-title"><span class="material-icons">receipt_long</span> Master Booking Logs</h2>
+      <h2 class="col-title"><span class="material-icons">receipt_long</span> Registro Prenotazioni Globale</h2>
       
       <div class="bookings-log-panel glass-panel">
-        <h3>Reservation Activity Feed</h3>
+        <h3>Attività di Prenotazione</h3>
         <div class="table-container">
           <table class="admin-table">
             <thead>
               <tr>
                 <th>ID</th>
-                <th>User</th>
-                <th>Room</th>
-                <th>Dates</th>
-                <th>Price</th>
-                <th>Status</th>
+                <th>Utente</th>
+                <th>Camera</th>
+                <th>Date</th>
+                <th>Prezzo</th>
+                <th>Stato</th>
               </tr>
             </thead>
             <tbody>
@@ -216,12 +216,12 @@
                 </td>
                 <td>
                   <span class="badge badge-mini" [ngClass]="booking.status.toLowerCase()">
-                    {{ booking.status }}
+                    {{ translateStatus(booking.status) }}
                   </span>
                 </td>
               </tr>
               <tr *ngIf="bookings().length === 0">
-                <td colspan="6" class="text-center text-muted">No reservations booked on StayHub yet.</td>
+                <td colspan="6" class="text-center text-muted">Nessuna prenotazione effettuata su StayHub al momento.</td>
               </tr>
             </tbody>
           </table>

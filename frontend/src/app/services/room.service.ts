@@ -38,4 +38,8 @@ export class RoomService {
   deleteRoom(id: number): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/${id}`);
   }
+
+  getOccupiedDates(id: number): Observable<{ checkIn: string; checkOut: string }[]> {
+    return this.http.get<{ checkIn: string; checkOut: string }[]>(`${this.apiUrl}/${id}/occupied`);
+  }
 }

@@ -15,8 +15,8 @@
       <span class="material-symbols-outlined">account_circle</span>
       <span class="name">{{ username }}</span>
     </div>
-    <a *ngIf="!isAuthenticated" routerLink="/register" class="outline-btn register-link-btn" style="text-decoration: none;">Register</a>
-    <button *ngIf="!isAuthenticated" (click)="login()" class="glow-btn">Login</button>
-    <button *ngIf="isAuthenticated" (click)="logout()" class="outline-btn">Logout</button>
+    <a *ngIf="!isAuthenticated" routerLink="/register" class="outline-btn register-link-btn" style="text-decoration: none;">Registrati</a>
+    <button *ngIf="!isAuthenticated" (click)="login()" class="glow-btn">Accedi</button>
+    <button *ngIf="isAuthenticated" (click)="logout()" class="outline-btn">Esci</button>
   </div>
 </nav>

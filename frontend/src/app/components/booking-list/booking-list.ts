@@ -64,7 +64,7 @@ export class BookingListComponent implements OnInit {
       },
       error: (err) => {
         console.error('Failed to load bookings:', err);
-        this.errorMessage.set('Could not load your reservations. Make sure you are authenticated.');
+        this.errorMessage.set('Impossibile caricare le tue prenotazioni. Assicurati di aver effettuato l\'accesso.');
         this.loading.set(false);
       }
     });
@@ -72,12 +72,12 @@ export class BookingListComponent implements OnInit {
 
   getRoomName(roomId: number): string {
     const room = this.roomsMap().get(roomId);
-    return room ? room.name : `Room #${roomId}`;
+    return room ? room.name : `Camera #${roomId}`;
   }
 
   getRoomDescription(roomId: number): string {
     const room = this.roomsMap().get(roomId);
-    return room ? room.description : 'Luxury accommodation';
+    return room ? room.description : 'Alloggio di lusso';
   }
 
   getReceiptUrl(bookingId: number): string {
@@ -100,7 +100,7 @@ export class BookingListComponent implements OnInit {
     this.bookingService.cancelBooking(booking.id).subscribe({
       next: () => {
         this.cancelLoading.set(false);
-        this.successMessage.set('Reservation successfully cancelled.');
+        this.successMessage.set('Prenotazione annullata con successo.');
         this.closeCancelModal();
         this.fetchBookings(); // refresh list
         
@@ -111,7 +111,7 @@ export class BookingListComponent implements OnInit {
       error: (err) => {
         this.cancelLoading.set(false);
         console.error('Cancellation failed:', err);
-        const errMsg = err.error?.message || 'Could not cancel this booking. Please contact support.';
+        const errMsg = err.error?.message || 'Impossibile annullare questa prenotazione. Contatta il supporto.';
         this.errorMessage.set(errMsg);
         this.closeCancelModal();
 
@@ -120,5 +120,25 @@ export class BookingListComponent implements OnInit {
         }, 5000);
       }
     });
+  }
+
+  translateStatus(status: string): string {
+    switch(status) {
+      case 'CONFIRMED': return 'Confermata';
+      case 'CANCELLED': return 'Cancellata';
+      case 'PENDING': return 'In attesa';
+      default: return status;
+    }
+  }
+
+  translatePaymentStatus(status: string): string {
+    switch(status) {
+      case 'PAID': return 'Pagato';
+      case 'PENDING': return 'In attesa';
+      case 'REFUNDED': return 'Rimborsato';
+      case 'FAILED': return 'Fallito';
+      case 'COMPLETED': return 'Completato';
+      default: return status;
+    }
   }
 }
