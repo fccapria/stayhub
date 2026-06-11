@@ -62,4 +62,8 @@ export class BookingService {
   getReceiptDownloadUrl(bookingId: number): string {
     return `http://localhost:8080/api/v1/exports/receipt?bookingId=${bookingId}`;
   }
+
+  getPayPalClientId(): Observable<{ clientId: string }> {
+    return this.http.get<{ clientId: string }>('http://localhost:8080/api/v1/config/paypal');
+  }
 }

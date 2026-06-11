@@ -24,13 +24,15 @@ export class RoomListComponent implements OnInit {
   checkIn = signal<string>('');
   checkOut = signal<string>('');
   paymentMethod = signal<'CLASSIC_CARD' | 'PAYPAL'>('CLASSIC_CARD');
-  
+
   // Payment Form Fields
   cardHolder = signal<string>('');
   cardNumber = signal<string>('');
   cvv = signal<string>('');
   expirationDate = signal<string>('');
   paypalEmail = signal<string>('');
+  paypalOrderId = signal<string>('');
+  paypalSdkLoading = signal<boolean>(false);
 
   // Touched Fields Signals
   cardHolderTouched = signal<boolean>(false);
@@ -51,11 +53,11 @@ export class RoomListComponent implements OnInit {
     const inStr = this.checkIn();
     const outStr = this.checkOut();
     if (!inStr || !outStr) return 0;
-    
+
     const checkInDate = new Date(inStr);
     const checkOutDate = new Date(outStr);
     if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) return 0;
-    
+
     const diffTime = checkOutDate.getTime() - checkInDate.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays > 0 ? diffDays : 0;
@@ -73,15 +75,15 @@ export class RoomListComponent implements OnInit {
     const inStr = this.checkIn();
     const outStr = this.checkOut();
     if (!inStr || !outStr) return false;
-    
+
     const checkInDate = new Date(inStr);
     const checkOutDate = new Date(outStr);
     if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) return false;
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     checkInDate.setHours(0, 0, 0, 0);
-    
+
     return checkInDate.getTime() >= today.getTime() && checkOutDate.getTime() > checkInDate.getTime();
   });
 
@@ -102,15 +104,15 @@ export class RoomListComponent implements OnInit {
   isExpirationDateValid = computed(() => {
     const exp = this.expirationDate().trim();
     if (!/^(0[1-9]|1[0-2])\/?([0-9]{2})$/.test(exp)) return false;
-    
+
     const parts = exp.split('/');
     const month = parseInt(parts[0], 10);
     const year = 2000 + parseInt(parts[1], 10);
-    
+
     const now = new Date();
     const currentMonth = now.getMonth() + 1;
     const currentYear = now.getFullYear();
-    
+
     if (year < currentYear) return false;
     if (year === currentYear && month < currentMonth) return false;
     return true;
@@ -122,7 +124,7 @@ export class RoomListComponent implements OnInit {
 
   isFormValid = computed(() => {
     if (!this.isDatesValid() || this.numberOfNights() <= 0) return false;
-    
+
     if (this.paymentMethod() === 'CLASSIC_CARD') {
       return this.isCardHolderValid() &&
              this.isCardNumberValid() &&
@@ -167,17 +169,17 @@ export class RoomListComponent implements OnInit {
       this.authService.login();
       return;
     }
-    
+
     this.selectedRoom.set(room);
     // Set default check-in tomorrow, checkout day after
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const dayAfter = new Date();
     dayAfter.setDate(dayAfter.getDate() + 2);
-    
+
     this.checkIn.set(tomorrow.toISOString().split('T')[0]);
     this.checkOut.set(dayAfter.toISOString().split('T')[0]);
-    
+
     // Reset forms & alerts
     this.errorMessage.set(null);
     this.successMessage.set(null);
@@ -186,6 +188,8 @@ export class RoomListComponent implements OnInit {
     this.cvv.set('');
     this.expirationDate.set('');
     this.paypalEmail.set('');
+    this.paypalOrderId.set('');
+    this.paymentMethod.set('CLASSIC_CARD');
 
     // Reset touched states
     this.cardHolderTouched.set(false);
@@ -197,17 +201,118 @@ export class RoomListComponent implements OnInit {
     this.checkOutTouched.set(false);
   }
 
+  setPaymentMethod(method: 'CLASSIC_CARD' | 'PAYPAL'): void {
+    this.paymentMethod.set(method);
+    if (method === 'PAYPAL') {
+      setTimeout(() => {
+        this.initPaypalButtons();
+      }, 0);
+    }
+  }
+
+  private loadPaypalSdk(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const win = window as any;
+      if (win.paypal) {
+        resolve();
+        return;
+      }
+      
+      this.bookingService.getPayPalClientId().subscribe({
+        next: (config) => {
+          const clientId = config.clientId || 'test';
+          const script = document.createElement('script');
+          script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR&intent=capture`;
+          script.type = 'text/javascript';
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = (err) => reject(err);
+          document.head.appendChild(script);
+        },
+        error: (err) => {
+          console.warn('Failed to fetch PayPal Client ID, falling back to "test":', err);
+          const script = document.createElement('script');
+          script.src = 'https://www.paypal.com/sdk/js?client-id=test&currency=EUR&intent=capture';
+          script.type = 'text/javascript';
+          script.async = true;
+          script.onload = () => resolve();
+          script.onerror = (e) => reject(e);
+          document.head.appendChild(script);
+        }
+      });
+    });
+  }
+
+  initPaypalButtons(): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+
+    this.paypalSdkLoading.set(true);
+    this.errorMessage.set(null);
+
+    this.loadPaypalSdk()
+      .then(() => {
+        this.paypalSdkLoading.set(false);
+        const container = document.getElementById('paypal-button-container');
+        if (container) {
+          container.innerHTML = '';
+        }
+
+        const paypal = (window as any).paypal;
+        if (paypal && paypal.Buttons) {
+          paypal.Buttons({
+            style: {
+              layout: 'vertical',
+              color: 'gold',
+              shape: 'rect',
+              label: 'paypal'
+            },
+            createOrder: (data: any, actions: any) => {
+              const price = this.totalPrice();
+              return actions.order.create({
+                purchase_units: [{
+                  amount: {
+                    currency_code: 'EUR',
+                    value: price.toFixed(2)
+                  },
+                  description: `StayHub Booking for ${this.selectedRoom()?.name}`
+                }]
+              });
+            },
+            onApprove: (data: any, actions: any) => {
+              this.paypalOrderId.set(data.orderID);
+              this.submitBooking();
+            },
+            onCancel: (data: any) => {
+              this.errorMessage.set('Payment cancelled by user.');
+            },
+            onError: (err: any) => {
+              console.error('PayPal Smart Buttons error:', err);
+              this.errorMessage.set('An error occurred during PayPal checkout. Please try again.');
+            }
+          }).render('#paypal-button-container');
+        } else {
+          this.errorMessage.set('PayPal SDK could not be initialized.');
+        }
+      })
+      .catch(err => {
+        console.error('Failed to load PayPal SDK script:', err);
+        this.paypalSdkLoading.set(false);
+        this.errorMessage.set('Failed to load PayPal SDK. Please check your internet connection.');
+      });
+  }
+
   closeBookingModal(): void {
     this.selectedRoom.set(null);
+    this.paypalOrderId.set('');
   }
 
   submitBooking(): void {
     const room = this.selectedRoom();
     if (!room || !room.id) return;
-    
+
     this.loading.set(true);
     this.errorMessage.set(null);
-    
+
     const request: BookingRequestDTO = {
       roomId: room.id,
       checkIn: this.checkIn(),
@@ -219,8 +324,8 @@ export class RoomListComponent implements OnInit {
         cvv: this.cvv(),
         expirationDate: this.expirationDate()
       } : {
-        paypalEmail: this.paypalEmail(),
-        paypalOrderId: 'PAY-' + Math.random().toString(36).substring(2, 9).toUpperCase()
+        paypalEmail: this.paypalEmail() || 'paypal-customer@stayhub.com',
+        paypalOrderId: this.paypalOrderId() || 'MOCK-PAY-' + Math.random().toString(36).substring(2, 9).toUpperCase()
       }
     };
 

@@ -149,7 +149,7 @@
             type="button" 
             class="tab-btn" 
             [class.active]="paymentMethod() === 'CLASSIC_CARD'"
-            (click)="paymentMethod.set('CLASSIC_CARD')">
+            (click)="setPaymentMethod('CLASSIC_CARD')">
             <span class="material-icons">credit_card</span>
             Credit/Debit Card
           </button>
@@ -157,7 +157,7 @@
             type="button" 
             class="tab-btn" 
             [class.active]="paymentMethod() === 'PAYPAL'"
-            (click)="paymentMethod.set('PAYPAL')">
+            (click)="setPaymentMethod('PAYPAL')">
             <span class="material-symbols-outlined">paypal</span>
             PayPal Checkout
           </button>
@@ -234,26 +234,15 @@
         </div>
 
         <!-- PayPal Form -->
-        <div *ngIf="paymentMethod() === 'PAYPAL'" class="payment-form animate-fade-in-up">
-          <div class="custom-input-group">
-            <label class="custom-input-label" for="paypalEmail">PayPal Email Address</label>
-            <input 
-              id="paypalEmail"
-              type="email" 
-              class="custom-input" 
-              [class.input-error]="paypalEmailTouched() && !isPaypalEmailValid()"
-              placeholder="your-email@paypal.com"
-              [ngModel]="paypalEmail()"
-              (ngModelChange)="paypalEmail.set($event)"
-              (blur)="paypalEmailTouched.set(true)"
-            />
-            <span class="validation-error" *ngIf="paypalEmailTouched() && !isPaypalEmailValid()">
-              Please enter a valid email address.
-            </span>
+        <div [style.display]="paymentMethod() === 'PAYPAL' ? 'block' : 'none'" class="payment-form animate-fade-in-up">
+          <div *ngIf="paypalSdkLoading()" class="paypal-loading">
+            <span class="spinner-inline"></span>
+            <span>Loading PayPal Checkout...</span>
           </div>
+          <div id="paypal-button-container" [style.visibility]="paypalSdkLoading() ? 'hidden' : 'visible'"></div>
           <div class="paypal-info-box">
             <span class="material-icons">info</span>
-            <p>You will authorize this transaction using your PayPal balance or linked account details upon completion.</p>
+            <p>Use PayPal Sandbox buyer credentials to test the transaction flow. The reservation will be confirmed automatically once approved.</p>
           </div>
         </div>
 
@@ -272,6 +261,7 @@
       <div class="modal-footer">
         <button class="outline-btn" (click)="closeBookingModal()" [disabled]="loading()">Cancel</button>
         <button 
+          *ngIf="paymentMethod() === 'CLASSIC_CARD'"
           class="glow-btn" 
           (click)="submitBooking()" 
           [disabled]="loading() || !isFormValid()">

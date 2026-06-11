@@ -35,6 +35,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/rooms/**").permitAll()
                 .requestMatchers("/api/v1/exports/receipt").permitAll()
                 .requestMatchers("/api/v1/users/register").permitAll()
+                .requestMatchers("/api/v1/config/**").permitAll()
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2

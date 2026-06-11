@@ -55,8 +55,8 @@ class BookingServiceIntegrationTest {
     void setUp() {
         paymentRepository.deleteAll();
         bookingRepository.deleteAll();
-        userRepository.deleteAll();
         roomRepository.deleteAll();
+        userRepository.deleteAll();
 
         testUser = User.builder()
                 .id("keycloak-uuid-123")
