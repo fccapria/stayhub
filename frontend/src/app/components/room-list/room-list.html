@@ -2,9 +2,8 @@
   <!-- Hero Section -->
   <section class="hero-section">
     <div class="hero-content">
-      <span class="hero-subtitle">BENVENUTO SU STAYHUB</span>
-      <h1 class="gold-gradient-text">Lusso Senza Compromessi</h1>
-      <p class="hero-description">Scopri alloggi di lusso curati nei minimi dettagli, pensati per una vita elegante e un comfort eccezionale.</p>
+      <h1 class="gold-gradient-text">Trova il tuo alloggio</h1>
+      <p class="hero-description">Scegli tra le strutture disponibili e prenota il tuo prossimo soggiorno.</p>
     </div>
   </section>
 
@@ -18,14 +17,14 @@
   <!-- Loading State -->
   <div *ngIf="loading() && rooms().length === 0" class="loading-state">
     <div class="spinner"></div>
-    <p>Caricamento delle camere...</p>
+    <p>Caricamento alloggi...</p>
   </div>
 
   <!-- Rooms Grid -->
   <div *ngIf="rooms().length > 0" class="rooms-grid">
     <div *ngFor="let room of rooms()" class="room-card glass-panel animate-fade-in-up">
       <div class="room-image-wrapper">
-        <img [src]="getRoomImageUrl(room.name)" [alt]="room.name" class="room-image" />
+        <img [src]="getRoomImageUrl(room)" [alt]="room.name" class="room-image" (error)="onImageError($event, room.name)" />
         <div class="room-price-badge">
           <span class="price-val">{{ room.pricePerNight | currency:'EUR':'symbol':'1.0-2' }}</span>
           <span class="price-lbl">/ notte</span>
@@ -53,16 +52,16 @@
           </button>
           
           <button 
-            *ngIf="authService.isAuthenticated() && !authService.hasRole('ADMIN')" 
+            *ngIf="authService.isAuthenticated() && !isOwnRoom(room)" 
             class="glow-btn full-width" 
             (click)="openBookingModal(room)">
             <span class="material-icons btn-icon">hotel</span>
-            Prenota Camera
+            Prenota
           </button>
 
-          <div *ngIf="authService.isAuthenticated() && authService.hasRole('ADMIN')" class="admin-notice">
-            <span class="material-icons">info</span>
-            Accesso come Amministratore
+          <div *ngIf="authService.isAuthenticated() && isOwnRoom(room)" class="admin-notice">
+            <span class="material-icons">domain</span>
+            La tua struttura
           </div>
         </div>
       </div>
@@ -72,8 +71,8 @@
   <!-- Empty State -->
   <div *ngIf="!loading() && rooms().length === 0" class="empty-state glass-panel">
     <span class="material-icons empty-icon">hotel</span>
-    <h3>Nessuna Camera Disponibile</h3>
-    <p>Non abbiamo trovato camere registrate al momento. Riprova più tardi o aggiungi camere come amministratore.</p>
+    <h3>Nessun alloggio disponibile</h3>
+    <p>Al momento non ci sono alloggi registrati. Riprova più tardi.</p>
   </div>
 
   <!-- Reservation & Payment Modal -->
@@ -204,7 +203,9 @@
               class="tab-btn" 
               [class.active]="paymentMethod() === 'PAYPAL'"
               (click)="setPaymentMethod('PAYPAL')">
-              <span class="material-symbols-outlined">paypal</span>
+              <svg style="width: 18px; height: 18px; vertical-align: middle; fill: currentColor; display: inline-block; margin-right: 6px;" viewBox="0 0 24 24">
+                <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.292-.032.21-.073.43-.122.659-.974 4.562-3.714 6.136-7.399 6.136H9.982a.856.856 0 0 0-.845.72l-.997 6.32a.642.642 0 0 1-.633.541l-.431-.041z"/>
+              </svg>
               Pagamento PayPal
             </button>
           </div>
@@ -285,10 +286,34 @@
               <span class="spinner-inline"></span>
               <span>Caricamento di PayPal...</span>
             </div>
-            <div id="paypal-button-container" [style.visibility]="paypalSdkLoading() ? 'hidden' : 'visible'"></div>
-            <div class="paypal-info-box">
+
+            <!-- Real PayPal Smart Buttons Container -->
+            <div *ngIf="!isPaypalMock()" id="paypal-button-container" [style.visibility]="paypalSdkLoading() ? 'hidden' : 'visible'"></div>
+
+            <!-- PayPal Sandbox Simulator Mode -->
+            <div *ngIf="isPaypalMock() && !paypalSdkLoading()" class="paypal-mock-box">
+              <div class="paypal-info-box">
+                <span class="material-icons">info</span>
+                <div>
+                  <strong>Modalità PayPal Sandbox</strong>
+                  <p>Puoi testare la prenotazione simulando la transazione PayPal Sandbox, oppure inserire il tuo <code>PAYPAL_CLIENT_ID</code> e <code>PAYPAL_CLIENT_SECRET</code> nel file <code>.env</code> per attivare il popup ufficiale.</p>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                class="paypal-mock-button" 
+                (click)="simulatePaypalPayment()" 
+                [disabled]="loading()">
+                <span *ngIf="!loading()">
+                  <span class="paypal-badge">PayPal</span> Simula Pagamento Sandbox (€{{ totalPrice().toFixed(2) }})
+                </span>
+                <span *ngIf="loading()" class="spinner-inline"></span>
+              </button>
+            </div>
+
+            <div *ngIf="!isPaypalMock() && !paypalSdkLoading()" class="paypal-info-box">
               <span class="material-icons">info</span>
-              <p>Usa le credenziali dell'acquirente Sandbox di PayPal per testare la transazione. La prenotazione verrà confermata automaticamente una volta approvata.</p>
+              <p>Usa il tuo account Sandbox PayPal per completare la transazione. La prenotazione verrà confermata automaticamente all'approvazione.</p>
             </div>
           </div>
 

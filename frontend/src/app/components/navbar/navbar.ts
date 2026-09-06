@@ -1,5 +1,5 @@
-import { Component, inject } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject, signal } from '@angular/core';
+import { RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { NgIf } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 
@@ -12,6 +12,9 @@ import { AuthService } from '../../services/auth.service';
 })
 export class Navbar {
   protected readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+
+  becomingHost = signal<boolean>(false);
 
   login(): void {
     this.authService.login();
@@ -30,6 +33,29 @@ export class Navbar {
   }
 
   get isAdmin(): boolean {
-    return this.authService.hasRole('ADMIN');
+    return this.authService.isAdmin();
+  }
+
+  get isHost(): boolean {
+    return this.authService.isHost();
+  }
+
+  get isHostOrAdmin(): boolean {
+    return this.authService.isHostOrAdmin();
+  }
+
+  async becomeHost(): Promise<void> {
+    if (this.becomingHost()) return;
+    this.becomingHost.set(true);
+    try {
+      const ok = await this.authService.becomeHost();
+      if (ok) {
+        this.router.navigate(['/admin']);
+      } else {
+        alert('Impossibile abilitare la modalità Locatore. Riprova più tardi.');
+      }
+    } finally {
+      this.becomingHost.set(false);
+    }
   }
 }

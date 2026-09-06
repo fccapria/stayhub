@@ -48,6 +48,14 @@ app.use((req, res, next) => {
 });
 
 /**
+ * SPA fallback: se SSR non gestisce la rotta, invia la shell HTML del browser
+ * evitando l'errore "Cannot GET /admin"
+ */
+app.use((req, res) => {
+  res.sendFile(join(browserDistFolder, 'index.html'));
+});
+
+/**
  * Start the server if this module is the main entry point, or it is ran via PM2.
  * The server listens on the port defined by the `PORT` environment variable, or defaults to 4000.
  */

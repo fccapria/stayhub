@@ -2,43 +2,21 @@
   <div class="register-card glass-panel animate-fade-in-up">
     <div class="register-header">
       <h1 class="gold-gradient-text">Crea Account</h1>
-      <p class="subtitle">Unisciti a StayHub per prenotare e gestire soggiorni di lusso.</p>
+      <p class="subtitle">Crea un account per iniziare a prenotare o gestire alloggi.</p>
     </div>
 
     <!-- Alert Box -->
-    <div *ngIf="errorMessage()" class="alert-box error">
+    <div *ngIf="errorMessage()" class="alert-box error animate-fade-in-up">
       <span class="material-icons">error_outline</span>
       <p>{{ errorMessage() }}</p>
+      <button type="button" class="close-alert-btn" (click)="errorMessage.set(null)">×</button>
     </div>
-    <div *ngIf="successMessage()" class="alert-box success">
+    <div *ngIf="successMessage()" class="alert-box success animate-fade-in-up">
       <span class="material-icons">check_circle_outline</span>
       <p>{{ successMessage() }}</p>
     </div>
 
     <form (ngSubmit)="submitRegister()" #registerForm="ngForm">
-      <!-- Role Switcher -->
-      <div class="custom-input-group">
-        <span class="custom-input-label">Ruolo dell'Account</span>
-        <div class="role-selector">
-          <button 
-            type="button" 
-            class="role-btn" 
-            [class.active]="role() === 'CUSTOMER'"
-            (click)="role.set('CUSTOMER')">
-            <span class="material-icons">person</span>
-            Cliente / Ospite
-          </button>
-          <button 
-            type="button" 
-            class="role-btn" 
-            [class.active]="role() === 'ADMIN'"
-            (click)="role.set('ADMIN')">
-            <span class="material-icons">admin_panel_settings</span>
-            Amministratore
-          </button>
-        </div>
-      </div>
-
       <!-- Username & Email -->
       <div class="custom-input-group">
         <label class="custom-input-label" for="regUsername">Username</label>
@@ -46,16 +24,21 @@
           id="regUsername"
           type="text" 
           class="custom-input" 
-          [class.input-error]="usernameTouched() && !isUsernameValid()"
+          [class.input-error]="(usernameTouched() && !isUsernameValid()) || usernameConflict()"
           placeholder="Scegli un username"
           [ngModel]="username()"
-          (ngModelChange)="username.set($event)"
+          (ngModelChange)="username.set($event); errorMessage.set(null)"
           (blur)="usernameTouched.set(true)"
           name="username"
           required
         />
         <span class="validation-error" *ngIf="usernameTouched() && !isUsernameValid()">
-          L'username deve contenere almeno 3 caratteri.
+          <ng-container *ngIf="username().trim().length === 0">L'username è obbligatorio.</ng-container>
+          <ng-container *ngIf="username().trim().length > 0 && username().trim().length < 3">L'username deve contenere almeno 3 caratteri.</ng-container>
+          <ng-container *ngIf="username().trim().length > 30">L'username non può superare i 30 caratteri.</ng-container>
+          <ng-container *ngIf="username().trim().length >= 3 && username().trim().length <= 30 && !isUsernameFormatValid()">
+            L'username può contenere solo lettere, numeri, '.', '-' e '_' (senza spazi o simboli).
+          </ng-container>
         </span>
       </div>
 
@@ -65,16 +48,17 @@
           id="regEmail"
           type="email" 
           class="custom-input" 
-          [class.input-error]="emailTouched() && !isEmailValid()"
+          [class.input-error]="(emailTouched() && !isEmailValid()) || emailConflict()"
           placeholder="tua-email@indirizzo.com"
           [ngModel]="email()"
-          (ngModelChange)="email.set($event)"
+          (ngModelChange)="email.set($event); errorMessage.set(null)"
           (blur)="emailTouched.set(true)"
           name="email"
           required
         />
         <span class="validation-error" *ngIf="emailTouched() && !isEmailValid()">
-          Inserisci un indirizzo email valido.
+          <ng-container *ngIf="email().trim().length === 0">L'indirizzo email è obbligatorio.</ng-container>
+          <ng-container *ngIf="email().trim().length > 0">Inserisci un indirizzo email valido (es. nome@dominio.com).</ng-container>
         </span>
       </div>
 
@@ -95,7 +79,11 @@
             required
           />
           <span class="validation-error" *ngIf="firstNameTouched() && !isFirstNameValid()">
-            Il nome è obbligatorio.
+            <ng-container *ngIf="firstName().trim().length === 0">Il nome è obbligatorio.</ng-container>
+            <ng-container *ngIf="firstName().trim().length > 50">Il nome non può superare i 50 caratteri.</ng-container>
+            <ng-container *ngIf="firstName().trim().length > 0 && firstName().trim().length <= 50 && !isFirstNameFormatValid()">
+              Il nome non può contenere numeri o simboli speciali (es. parentesi).
+            </ng-container>
           </span>
         </div>
         <div class="custom-input-group">
@@ -113,7 +101,11 @@
             required
           />
           <span class="validation-error" *ngIf="lastNameTouched() && !isLastNameValid()">
-            Il cognome è obbligatorio.
+            <ng-container *ngIf="lastName().trim().length === 0">Il cognome è obbligatorio.</ng-container>
+            <ng-container *ngIf="lastName().trim().length > 50">Il cognome non può superare i 50 caratteri.</ng-container>
+            <ng-container *ngIf="lastName().trim().length > 0 && lastName().trim().length <= 50 && !isLastNameFormatValid()">
+              Il cognome non può contenere numeri o simboli speciali (es. parentesi).
+            </ng-container>
           </span>
         </div>
       </div>
@@ -121,21 +113,55 @@
       <!-- Password -->
       <div class="custom-input-group">
         <label class="custom-input-label" for="regPassword">Password</label>
-        <input 
-          id="regPassword"
-          type="password" 
-          class="custom-input" 
-          [class.input-error]="passwordTouched() && !isPasswordValid()"
-          placeholder="••••••••"
-          [ngModel]="password()"
-          (ngModelChange)="password.set($event)"
-          (blur)="passwordTouched.set(true)"
-          name="password"
-          required
-        />
+        <div class="password-input-wrapper">
+          <input 
+            id="regPassword"
+            [type]="showPassword() ? 'text' : 'password'" 
+            class="custom-input" 
+            [class.input-error]="passwordTouched() && !isPasswordValid()"
+            placeholder="••••••••"
+            [ngModel]="password()"
+            (ngModelChange)="password.set($event)"
+            (blur)="passwordTouched.set(true)"
+            name="password"
+            required
+          />
+          <button 
+            type="button" 
+            class="toggle-pwd-btn" 
+            (click)="showPassword.set(!showPassword())"
+            [title]="showPassword() ? 'Nascondi password' : 'Mostra password'">
+            <span class="material-icons">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+          </button>
+        </div>
         <span class="validation-error" *ngIf="passwordTouched() && !isPasswordValid()">
-          La password deve contenere almeno 6 caratteri.
+          <ng-container *ngIf="password().trim().length === 0">La password è obbligatoria.</ng-container>
+          <ng-container *ngIf="password().trim().length > 0 && password().trim().length < 6">La password deve contenere almeno 6 caratteri.</ng-container>
+          <ng-container *ngIf="password().length > 100">La password non può superare i 100 caratteri.</ng-container>
         </span>
+      </div>
+
+      <!-- Account Type Selection -->
+      <div class="custom-input-group">
+        <label class="custom-input-label">Tipo di Account</label>
+        <div class="role-selector">
+          <button 
+            type="button" 
+            class="role-btn" 
+            [class.active]="role() === 'CUSTOMER'" 
+            (click)="role.set('CUSTOMER')">
+            <span class="material-icons">person</span>
+            Viaggiatore
+          </button>
+          <button 
+            type="button" 
+            class="role-btn" 
+            [class.active]="role() === 'HOST'" 
+            (click)="role.set('HOST')">
+            <span class="material-icons">home_work</span>
+            Locatore (Host)
+          </button>
+        </div>
       </div>
 
       <button 

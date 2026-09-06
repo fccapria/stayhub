@@ -53,19 +53,86 @@
 .auth-section {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+}
+
+.nav-auth-btn {
+  height: 38px;
+  min-width: 95px;
+  padding: 0 16px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.logout-btn {
+  min-width: 78px;
 }
 
 .user-badge {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  height: 38px;
   gap: 8px;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 500;
   color: var(--text-secondary);
+  padding: 0 12px;
+  background: rgba(9, 9, 11, 0.02);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 
 .user-badge span.name {
   color: var(--text-primary);
   font-weight: 600;
+}
+
+.role-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.role-badge.admin {
+  background: rgba(180, 83, 9, 0.12);
+  color: #b45309;
+  border: 1px solid rgba(180, 83, 9, 0.3);
+}
+
+.role-badge.host {
+  background: rgba(2, 132, 199, 0.12);
+  color: var(--accent-gold);
+  border: 1px solid rgba(2, 132, 199, 0.3);
+}
+
+.become-host-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0 14px;
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: var(--transition-fast);
+}
+
+.become-host-btn:hover {
+  background: rgba(2, 132, 199, 0.08);
+}
+
+.become-host-btn .icon-inline {
+  font-size: 18px;
 }

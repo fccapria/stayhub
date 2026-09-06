@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-register',
@@ -18,13 +19,19 @@ export class RegisterComponent {
   protected readonly authService = inject(AuthService);
   private readonly platformId = inject(PLATFORM_ID);
 
+  ngOnInit(): void {
+    if (isPlatformBrowser(this.platformId) && this.authService.isAuthenticated()) {
+      this.router.navigate(['/']);
+    }
+  }
+
   // Form Signals
   username = signal<string>('');
   password = signal<string>('');
   email = signal<string>('');
   firstName = signal<string>('');
   lastName = signal<string>('');
-  role = signal<'CUSTOMER' | 'ADMIN'>('CUSTOMER');
+  role = signal<'CUSTOMER' | 'HOST'>('CUSTOMER');
 
   // Touched States
   usernameTouched = signal<boolean>(false);
@@ -37,15 +44,59 @@ export class RegisterComponent {
   loading = signal<boolean>(false);
   errorMessage = signal<string | null>(null);
   successMessage = signal<string | null>(null);
+  showPassword = signal<boolean>(false);
 
-  // Validation Computeds
-  isUsernameValid = computed(() => this.username().trim().length >= 3);
-  isPasswordValid = computed(() => this.password().trim().length >= 6);
-  isEmailValid = computed(() => 
-    /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(this.email().trim())
-  );
-  isFirstNameValid = computed(() => this.firstName().trim().length >= 1);
-  isLastNameValid = computed(() => this.lastName().trim().length >= 1);
+  // Validation Patterns & Computeds
+  readonly usernamePattern = /^[a-zA-Z0-9._-]+$/;
+  readonly emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  readonly namePattern = /^[a-zA-Z\u00C0-\u024F\s'-]+$/;
+
+  isUsernameFormatValid = computed(() => {
+    const u = this.username().trim();
+    return u.length === 0 || this.usernamePattern.test(u);
+  });
+  isUsernameValid = computed(() => {
+    const u = this.username().trim();
+    return u.length >= 3 && u.length <= 30 && this.usernamePattern.test(u);
+  });
+
+  isPasswordValid = computed(() => {
+    const p = this.password();
+    return p.length >= 6 && p.trim().length >= 6 && p.length <= 100;
+  });
+
+  isEmailValid = computed(() => {
+    const e = this.email().trim();
+    return e.length >= 5 && e.length <= 100 && this.emailPattern.test(e);
+  });
+
+  isFirstNameFormatValid = computed(() => {
+    const val = this.firstName().trim();
+    return val.length === 0 || (val.length <= 50 && this.namePattern.test(val));
+  });
+  isFirstNameValid = computed(() => {
+    const val = this.firstName().trim();
+    return val.length >= 1 && val.length <= 50 && this.namePattern.test(val);
+  });
+
+  isLastNameFormatValid = computed(() => {
+    const val = this.lastName().trim();
+    return val.length === 0 || (val.length <= 50 && this.namePattern.test(val));
+  });
+  isLastNameValid = computed(() => {
+    const val = this.lastName().trim();
+    return val.length >= 1 && val.length <= 50 && this.namePattern.test(val);
+  });
+
+  usernameConflict = computed(() => {
+    const msg = this.errorMessage()?.toLowerCase() || '';
+    return msg.includes('nome utente') || msg.includes('username');
+  });
+
+  emailConflict = computed(() => {
+    const msg = this.errorMessage()?.toLowerCase() || '';
+    return msg.includes('email');
+  });
 
   isFormValid = computed(() => {
     return this.isUsernameValid() &&
@@ -71,7 +122,7 @@ export class RegisterComponent {
       role: this.role()
     };
 
-    this.http.post('http://localhost:8080/api/v1/users/register', payload).subscribe({
+    this.http.post(`${environment.apiUrl}/users/register`, payload).subscribe({
       next: () => {
         this.loading.set(false);
         this.successMessage.set('Account creato con successo! Reindirizzamento al login...');
@@ -86,7 +137,22 @@ export class RegisterComponent {
       error: (err) => {
         this.loading.set(false);
         console.error('Registration failed:', err);
-        const errMsg = err.error?.message || 'Impossibile creare l\'account. L\'username o l\'email potrebbero essere già in uso.';
+        let errMsg = err.error?.message;
+        if (!errMsg && typeof err.error === 'string') {
+          try {
+            const parsed = JSON.parse(err.error);
+            errMsg = parsed.message || parsed.errorMessage;
+          } catch {
+            errMsg = err.error;
+          }
+        }
+        if (!errMsg) {
+          if (err.status === 409) {
+            errMsg = 'Nome utente o indirizzo email già registrati.';
+          } else {
+            errMsg = 'Impossibile completare la registrazione. Riprova più tardi.';
+          }
+        }
         this.errorMessage.set(errMsg);
       }
     });

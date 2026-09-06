@@ -151,10 +151,15 @@
 
 .full-width {
   width: 100%;
-  display: flex;
+  height: 42px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 
 .btn-icon {
@@ -272,13 +277,13 @@
   background: rgba(2, 132, 199, 0.05);
   border: 1px solid rgba(2, 132, 199, 0.15);
   border-radius: 12px;
-  padding: 12px 16px;
-  margin-bottom: 24px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
 }
 
 .mini-summary-bar .material-icons {
   color: var(--accent-gold);
-  font-size: 24px;
+  font-size: 22px;
 }
 
 .mini-summary-details {
@@ -287,12 +292,12 @@
 }
 
 .mini-summary-details span {
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   color: var(--text-secondary);
 }
 
 .mini-summary-details strong {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   color: var(--text-primary);
   font-weight: 600;
 }
@@ -301,20 +306,20 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .modal-section-title.spacing-top {
-  margin-top: 24px;
+  margin-top: 18px;
 }
 
 .modal-section-title .material-icons {
-  font-size: 20px;
+  font-size: 18px;
   color: var(--accent-gold);
 }
 
 .modal-section-title h3 {
-  font-size: 1rem;
+  font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-secondary);
@@ -331,16 +336,16 @@
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 16px;
-  margin: 16px 0;
+  padding: 10px 14px;
+  margin: 12px 0 0;
 }
 
 .summary-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: var(--text-secondary);
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .summary-row:last-child {
@@ -350,11 +355,11 @@
 .summary-divider {
   height: 1px;
   background: var(--border-color);
-  margin: 12px 0;
+  margin: 6px 0;
 }
 
 .summary-row.total-row {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   color: var(--text-primary);
 }
 
@@ -382,17 +387,20 @@
 .tab-btn {
   background: rgba(9, 9, 11, 0.02);
   border: 1px solid var(--border-color);
-  padding: 12px;
+  height: 42px;
+  padding: 0 12px;
   border-radius: 8px;
   color: var(--text-secondary);
   font-family: var(--font-display);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 600;
   cursor: pointer;
   transition: var(--transition-smooth);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-sizing: border-box;
 }
 
 .tab-btn:hover {
@@ -479,6 +487,48 @@
   width: 100%;
 }
 
+.paypal-mock-box {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.paypal-mock-button {
+  width: 100%;
+  height: 48px;
+  background-color: #ffc439;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #003087;
+  transition: background-color 0.2s, transform 0.1s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.paypal-mock-button:hover:not(:disabled) {
+  background-color: #f4b400;
+  transform: translateY(-1px);
+}
+
+.paypal-mock-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.paypal-mock-button .paypal-badge {
+  font-style: italic;
+  font-weight: 900;
+  margin-right: 6px;
+  color: #003087;
+}
+
 /* Custom Date Selector Summary */
 .date-summary-container {
   display: flex;
@@ -488,9 +538,9 @@
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 12px 16px;
-  max-width: 380px;
-  margin: 0 auto 20px;
+  padding: 8px 14px;
+  max-width: 100%;
+  margin: 0 0 12px;
 }
 
 .date-summary-box {
@@ -505,7 +555,7 @@
 }
 
 .summary-lbl {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
   font-weight: 600;
   margin-bottom: 2px;
@@ -513,7 +563,7 @@
 }
 
 .summary-val {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   color: var(--text-secondary);
   font-weight: 500;
 }
@@ -528,21 +578,21 @@
 .custom-calendar {
   border: 1px solid var(--border-color);
   border-radius: 16px;
-  padding: 16px;
+  padding: 10px 12px;
   background: var(--bg-secondary);
-  max-width: 380px;
-  margin: 0 auto 24px;
+  max-width: 100%;
+  margin: 0 0 12px;
 }
 
 .calendar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .calendar-month-title {
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -575,11 +625,11 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .calendar-weekdays span {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -593,6 +643,7 @@
 
 .calendar-day-btn {
   aspect-ratio: 1;
+  max-height: 34px;
   background: none;
   border: none;
   border-radius: 50%;
@@ -602,7 +653,7 @@
   justify-content: center;
   cursor: pointer;
   font-family: var(--font-body);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 500;
   color: var(--text-primary);
   position: relative;
@@ -642,7 +693,7 @@
 
 .occupied-indicator {
   position: absolute;
-  bottom: 4px;
+  bottom: 2px;
   width: 4px;
   height: 4px;
   border-radius: 50%;

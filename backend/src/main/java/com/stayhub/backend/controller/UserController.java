@@ -34,6 +34,8 @@ public class UserController {
             Collection<String> roles = (Collection<String>) realmAccess.get("roles");
             if (roles != null && roles.contains("ADMIN")) {
                 role = Role.ADMIN;
+            } else if (roles != null && roles.contains("HOST")) {
+                role = Role.HOST;
             }
         }
 
@@ -47,6 +49,12 @@ public class UserController {
 
         UserDTO syncedUser = userService.syncUser(userDTO);
         return ResponseEntity.ok(syncedUser);
+    }
+
+    @PostMapping("/become-host")
+    public ResponseEntity<UserDTO> becomeHost(@AuthenticationPrincipal Jwt jwt) {
+        String userId = jwt.getSubject();
+        return ResponseEntity.ok(userService.becomeHost(userId));
     }
 
     @GetMapping("/{id}")

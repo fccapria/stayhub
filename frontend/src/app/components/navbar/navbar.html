@@ -6,17 +6,29 @@
 
   <ul class="nav-links">
     <li><a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}" class="nav-item">Stanze</a></li>
-    <li *ngIf="isAuthenticated && !isAdmin"><a routerLink="/bookings/my" routerLinkActive="active" class="nav-item">Mie Prenotazioni</a></li>
-    <li *ngIf="isAuthenticated && isAdmin"><a routerLink="/admin" routerLinkActive="active" class="nav-item">Dashboard</a></li>
+    <li *ngIf="isAuthenticated"><a routerLink="/bookings/my" routerLinkActive="active" class="nav-item">I miei Viaggi</a></li>
+    <li *ngIf="isAuthenticated && isHostOrAdmin"><a routerLink="/admin" routerLinkActive="active" class="nav-item">Pannello Locatore</a></li>
   </ul>
 
   <div class="auth-section">
+    <button 
+      *ngIf="isAuthenticated && !isHostOrAdmin" 
+      (click)="becomeHost()" 
+      class="outline-btn become-host-btn" 
+      [disabled]="becomingHost()"
+      title="Diventa locatore per pubblicare e gestire alloggi">
+      <span class="material-symbols-outlined icon-inline">add_business</span>
+      <span>{{ becomingHost() ? 'Attivazione...' : 'Diventa Locatore' }}</span>
+    </button>
+
     <div class="user-badge" *ngIf="isAuthenticated">
       <span class="material-symbols-outlined">account_circle</span>
       <span class="name">{{ username }}</span>
+      <span *ngIf="isAdmin" class="role-badge admin">Admin</span>
+      <span *ngIf="!isAdmin && isHost" class="role-badge host">Host</span>
     </div>
-    <a *ngIf="!isAuthenticated" routerLink="/register" class="outline-btn register-link-btn" style="text-decoration: none;">Registrati</a>
-    <button *ngIf="!isAuthenticated" (click)="login()" class="glow-btn">Accedi</button>
-    <button *ngIf="isAuthenticated" (click)="logout()" class="outline-btn">Esci</button>
+    <a *ngIf="!isAuthenticated" routerLink="/register" class="outline-btn nav-auth-btn register-link-btn">Registrati</a>
+    <button *ngIf="!isAuthenticated" (click)="login()" class="glow-btn nav-auth-btn login-btn">Accedi</button>
+    <button *ngIf="isAuthenticated" (click)="logout()" class="outline-btn nav-auth-btn logout-btn">Esci</button>
   </div>
 </nav>

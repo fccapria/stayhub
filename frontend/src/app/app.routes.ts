@@ -11,14 +11,18 @@ export const routes: Routes = [
   { 
     path: 'bookings/my', 
     component: BookingListComponent, 
-    canActivate: [authGuard], 
-    data: { role: 'CUSTOMER' } 
+    canActivate: [authGuard]
   },
   { 
     path: 'admin', 
     component: AdminDashboardComponent, 
     canActivate: [authGuard], 
-    data: { role: 'ADMIN' } 
+    data: { roles: ['ADMIN', 'HOST'] } 
+  },
+  { 
+    path: 'host', 
+    redirectTo: 'admin', 
+    pathMatch: 'full' 
   },
   { path: '**', redirectTo: '' }
 ];

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, computed, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, inject, signal, computed, effect, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RoomService, RoomDTO } from '../../services/room.service';
@@ -23,7 +23,7 @@ export interface CalendarDay {
   templateUrl: './room-list.html',
   styleUrl: './room-list.css'
 })
-export class RoomListComponent implements OnInit {
+export class RoomListComponent implements OnInit, OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly roomService = inject(RoomService);
   private readonly bookingService = inject(BookingService);
@@ -211,9 +211,40 @@ export class RoomListComponent implements OnInit {
     }
   });
 
+  isOwnRoom(room: RoomDTO): boolean {
+    const currentUserId = this.authService.getUserId();
+    return !!currentUserId && !!room.ownerId && currentUserId === room.ownerId;
+  }
+
+  constructor() {
+    effect(() => {
+      const isModalOpen = this.selectedRoom() !== null;
+      if (isPlatformBrowser(this.platformId)) {
+        if (isModalOpen) {
+          document.body.classList.add('modal-open');
+        } else {
+          document.body.classList.remove('modal-open');
+        }
+      }
+    });
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapePress(): void {
+    if (this.selectedRoom() && !this.loading()) {
+      this.closeBookingModal();
+    }
+  }
+
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.fetchRooms();
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      document.body.classList.remove('modal-open');
     }
   }
 
@@ -232,12 +263,27 @@ export class RoomListComponent implements OnInit {
     });
   }
 
-  getRoomImageUrl(roomName: string): string {
-    const name = roomName.toLowerCase();
+  getRoomImageUrl(room: RoomDTO): string {
+    if (room.imageUrl) {
+      const url = this.roomService.getRoomImageUrl(room.imageUrl);
+      if (url) return url;
+    }
+    return this.getDefaultRoomImage(room.name);
+  }
+
+  getDefaultRoomImage(roomName: string): string {
+    const name = (roomName || '').toLowerCase();
     if (name.includes('suite') || name.includes('penthouse') || name.includes('presidential')) {
       return 'assets/suite_room.png';
     }
     return 'assets/deluxe_room.png';
+  }
+
+  onImageError(event: Event, roomName: string): void {
+    const target = event.target as HTMLImageElement;
+    if (target) {
+      target.src = this.getDefaultRoomImage(roomName);
+    }
   }
 
   openBookingModal(room: RoomDTO): void {
@@ -414,8 +460,11 @@ export class RoomListComponent implements OnInit {
     }
   }
 
+  isPaypalMock = signal<boolean>(false);
+
   setPaymentMethod(method: 'CLASSIC_CARD' | 'PAYPAL'): void {
     this.paymentMethod.set(method);
+    this.errorMessage.set(null);
     if (method === 'PAYPAL') {
       setTimeout(() => {
         this.initPaypalButtons();
@@ -423,37 +472,69 @@ export class RoomListComponent implements OnInit {
     }
   }
 
-  private loadPaypalSdk(): Promise<void> {
+  selectPaymentMethod(method: 'CLASSIC_CARD' | 'PAYPAL'): void {
+    this.setPaymentMethod(method);
+  }
+
+  private loadPaypalSdkScript(clientId: string): Promise<void> {
     return new Promise((resolve, reject) => {
       const win = window as any;
-      if (win.paypal) {
+      if (win.paypal && win.paypal.Buttons) {
         resolve();
         return;
       }
-      
-      this.bookingService.getPayPalClientId().subscribe({
-        next: (config) => {
-          const clientId = config.clientId || 'test';
-          const script = document.createElement('script');
-          script.src = `https://www.paypal.com/sdk/js?client-id=${clientId}&currency=EUR&intent=capture`;
-          script.type = 'text/javascript';
-          script.async = true;
-          script.onload = () => resolve();
-          script.onerror = (err) => reject(err);
-          document.head.appendChild(script);
-        },
-        error: (err) => {
-          console.warn('Failed to fetch PayPal Client ID, falling back to "test":', err);
-          const script = document.createElement('script');
-          script.src = 'https://www.paypal.com/sdk/js?client-id=test&currency=EUR&intent=capture';
-          script.type = 'text/javascript';
-          script.async = true;
-          script.onload = () => resolve();
-          script.onerror = (e) => reject(e);
-          document.head.appendChild(script);
-        }
-      });
+      const existingScript = document.getElementById('paypal-sdk-script');
+      if (existingScript) {
+        existingScript.remove();
+      }
+      const script = document.createElement('script');
+      script.id = 'paypal-sdk-script';
+      script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(clientId)}&currency=EUR&intent=capture`;
+      script.type = 'text/javascript';
+      script.async = true;
+      script.onload = () => resolve();
+      script.onerror = (err) => reject(err);
+      document.head.appendChild(script);
     });
+  }
+
+  private renderPaypalSmartButtons(): void {
+    const paypal = (window as any).paypal;
+    if (paypal && paypal.Buttons) {
+      paypal.Buttons({
+        style: {
+          layout: 'vertical',
+          color: 'gold',
+          shape: 'rect',
+          label: 'paypal'
+        },
+        createOrder: (data: any, actions: any) => {
+          const price = this.totalPrice();
+          return actions.order.create({
+            purchase_units: [{
+              amount: {
+                currency_code: 'EUR',
+                value: price.toFixed(2)
+              },
+              description: `StayHub Booking for ${this.selectedRoom()?.name}`
+            }]
+          });
+        },
+        onApprove: (data: any, actions: any) => {
+          this.paypalOrderId.set(data.orderID);
+          this.submitBooking();
+        },
+        onCancel: (data: any) => {
+          this.errorMessage.set('Pagamento annullato dall\'utente.');
+        },
+        onError: (err: any) => {
+          console.error('PayPal Smart Buttons error:', err);
+          this.errorMessage.set('Si è verificato un errore durante il pagamento con PayPal. Riprova.');
+        }
+      }).render('#paypal-button-container');
+    } else {
+      this.isPaypalMock.set(true);
+    }
   }
 
   initPaypalButtons(): void {
@@ -462,56 +543,44 @@ export class RoomListComponent implements OnInit {
     this.paypalSdkLoading.set(true);
     this.errorMessage.set(null);
 
-    this.loadPaypalSdk()
-      .then(() => {
-        this.paypalSdkLoading.set(false);
-        const container = document.getElementById('paypal-button-container');
-        if (container) {
-          container.innerHTML = '';
+    this.bookingService.getPayPalClientId().subscribe({
+      next: (config) => {
+        const clientId = config.clientId?.trim();
+        // If no clientId or set to mock_client_id, use sandbox simulator
+        if (!clientId || clientId === 'mock_client_id') {
+          this.isPaypalMock.set(true);
+          this.paypalSdkLoading.set(false);
+          return;
         }
 
-        const paypal = (window as any).paypal;
-        if (paypal && paypal.Buttons) {
-          paypal.Buttons({
-            style: {
-              layout: 'vertical',
-              color: 'gold',
-              shape: 'rect',
-              label: 'paypal'
-            },
-            createOrder: (data: any, actions: any) => {
-              const price = this.totalPrice();
-              return actions.order.create({
-                purchase_units: [{
-                  amount: {
-                    currency_code: 'EUR',
-                    value: price.toFixed(2)
-                  },
-                  description: `StayHub Booking for ${this.selectedRoom()?.name}`
-                }]
-              });
-            },
-            onApprove: (data: any, actions: any) => {
-              this.paypalOrderId.set(data.orderID);
-              this.submitBooking();
-            },
-            onCancel: (data: any) => {
-              this.errorMessage.set('Pagamento annullato dall\'utente.');
-            },
-            onError: (err: any) => {
-              console.error('PayPal Smart Buttons error:', err);
-              this.errorMessage.set('Si è verificato un errore durante il pagamento con PayPal. Riprova.');
+        // Real client ID configured, load PayPal SDK
+        this.isPaypalMock.set(false);
+        this.loadPaypalSdkScript(clientId)
+          .then(() => {
+            this.paypalSdkLoading.set(false);
+            const container = document.getElementById('paypal-button-container');
+            if (container) {
+              container.innerHTML = '';
             }
-          }).render('#paypal-button-container');
-        } else {
-          this.errorMessage.set('Impossibile inizializzare l\'SDK di PayPal.');
-        }
-      })
-      .catch(err => {
-        console.error('Failed to load PayPal SDK script:', err);
+            this.renderPaypalSmartButtons();
+          })
+          .catch((err) => {
+            console.warn('PayPal SDK failed to load, falling back to Sandbox simulation mode:', err);
+            this.paypalSdkLoading.set(false);
+            this.isPaypalMock.set(true);
+          });
+      },
+      error: (err) => {
+        console.warn('Could not fetch PayPal config, enabling Sandbox simulation:', err);
         this.paypalSdkLoading.set(false);
-        this.errorMessage.set('Impossibile caricare l\'SDK di PayPal. Controlla la tua connessione internet.');
-      });
+        this.isPaypalMock.set(true);
+      }
+    });
+  }
+
+  simulatePaypalPayment(): void {
+    this.paypalOrderId.set('MOCK-PAY-' + Math.random().toString(36).substring(2, 9).toUpperCase());
+    this.submitBooking();
   }
 
   closeBookingModal(): void {

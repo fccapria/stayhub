@@ -40,7 +40,8 @@
 .role-btn {
   background: rgba(9, 9, 11, 0.02);
   border: 1px solid var(--border-color);
-  padding: 12px;
+  height: 42px;
+  padding: 0 16px;
   border-radius: 8px;
   color: var(--text-secondary);
   font-family: var(--font-display);
@@ -48,10 +49,11 @@
   font-weight: 600;
   cursor: pointer;
   transition: var(--transition-smooth);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-sizing: border-box;
 }
 
 .role-btn:hover {
@@ -71,6 +73,7 @@
 
 .submit-btn {
   margin-top: 24px;
+  height: 44px;
 }
 
 .login-footer {
@@ -105,4 +108,39 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+/* Password Toggle Wrapper */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper .custom-input {
+  padding-right: 44px;
+}
+
+.toggle-pwd-btn {
+  position: absolute;
+  right: 12px;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: var(--transition-fast);
+}
+
+.toggle-pwd-btn:hover {
+  color: var(--text-primary);
+}
+
+.toggle-pwd-btn .material-icons {
+  font-size: 20px;
 }

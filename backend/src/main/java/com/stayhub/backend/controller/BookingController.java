@@ -42,7 +42,7 @@ public class BookingController {
     }
 
     @GetMapping("/owner")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('HOST', 'ADMIN')")
     public ResponseEntity<List<BookingResponseDTO>> getOwnerBookings(@AuthenticationPrincipal Jwt jwt) {
         String ownerId = jwt.getSubject();
         return ResponseEntity.ok(bookingService.getBookingsByOwnerId(ownerId));
