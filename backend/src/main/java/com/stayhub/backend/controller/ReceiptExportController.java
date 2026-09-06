@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -17,6 +19,10 @@ import org.springframework.web.server.ResponseStatusException;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.Map;
+
+import com.stayhub.backend.service.PdfReceiptService;
 
 @RestController
 @RequestMapping("/api/v1/exports")
@@ -25,33 +31,44 @@ public class ReceiptExportController {
 
     private final BookingRepository bookingRepository;
     private final PaymentRepository paymentRepository;
+    private final PdfReceiptService pdfReceiptService;
 
     @GetMapping("/receipt")
-    public void getReceipt(@RequestParam("bookingId") Long bookingId, HttpServletResponse resp) throws IOException {
+    @SuppressWarnings("unchecked")
+    public void getReceipt(
+            @RequestParam("bookingId") Long bookingId,
+            @AuthenticationPrincipal Jwt jwt,
+            HttpServletResponse resp) throws IOException {
+
         Booking booking = bookingRepository.findByIdWithRoomAndUser(bookingId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Booking not found"));
 
+        String currentUserId = jwt.getSubject();
+        boolean isAdmin = false;
+        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+        if (realmAccess != null && !realmAccess.isEmpty()) {
+            Collection<String> roles = (Collection<String>) realmAccess.get("roles");
+            if (roles != null && roles.contains("ADMIN")) {
+                isAdmin = true;
+            }
+        }
+
+        boolean isGuest = booking.getUser() != null && currentUserId.equals(booking.getUser().getId());
+        boolean isRoomOwner = booking.getRoom() != null && booking.getRoom().getOwner() != null 
+                && currentUserId.equals(booking.getRoom().getOwner().getId());
+        if (!isAdmin && !isGuest && !isRoomOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied to booking receipt");
+        }
+
         Payment payment = paymentRepository.findByBookingId(bookingId).orElse(null);
 
-        resp.setContentType("text/csv; charset=utf-8");
-        resp.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=receipt-booking-" + bookingId + ".csv");
+        resp.setContentType("application/pdf");
+        resp.setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=receipt-booking-" + bookingId + ".pdf");
 
-        // Write CSV UTF-8 BOM
-        resp.getOutputStream().write(0xEF);
-        resp.getOutputStream().write(0xBB);
-        resp.getOutputStream().write(0xBF);
-
-        try (PrintWriter writer = new PrintWriter(resp.getOutputStream(), true, StandardCharsets.UTF_8)) {
-            writer.println("StayHub Reservation Receipt");
-            writer.println("Receipt Number,REC-" + bookingId + "-" + (payment != null ? payment.getId() : "PENDING"));
-            writer.println("Room Name," + booking.getRoom().getName());
-            writer.println("Guest Email," + booking.getUser().getEmail());
-            writer.println("Check-in Date," + booking.getCheckIn());
-            writer.println("Check-out Date," + booking.getCheckOut());
-            writer.println("Total Paid (EUR)," + booking.getTotalPrice());
-            writer.println("Booking Status," + booking.getStatus());
-            writer.println("Payment Method," + (payment != null ? payment.getPaymentMethod() : "N/A"));
-            writer.println("Transaction Reference," + (payment != null && payment.getTransactionReference() != null ? payment.getTransactionReference() : "N/A"));
+        try {
+            pdfReceiptService.generateReceiptPdf(booking, payment, resp.getOutputStream());
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Error generating PDF receipt: " + e.getMessage());
         }
     }
 }

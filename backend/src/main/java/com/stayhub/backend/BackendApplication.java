@@ -2,12 +2,14 @@ package com.stayhub.backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableAsync;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
 @SpringBootApplication
+@EnableAsync
 public class BackendApplication {
 
     public static void main(String[] args) {
@@ -37,7 +39,24 @@ public class BackendApplication {
                         } else if (value.startsWith("'") && value.endsWith("'")) {
                             value = value.substring(1, value.length() - 1);
                         }
+                        if ("SPRING_MAIL_PASSWORD".equalsIgnoreCase(key)) {
+                            value = value.replace(" ", "").trim();
+                            System.setProperty("spring.mail.password", value);
+                        }
+                        if ("SPRING_MAIL_USERNAME".equalsIgnoreCase(key)) {
+                            System.setProperty("spring.mail.username", value);
+                        }
+                        if ("STAYHUB_MAIL_FROM".equalsIgnoreCase(key)) {
+                            System.setProperty("stayhub.mail.from", value);
+                        }
+                        if ("PAYPAL_CLIENT_ID".equalsIgnoreCase(key)) {
+                            System.setProperty("paypal.client-id", value);
+                        }
+                        if ("PAYPAL_CLIENT_SECRET".equalsIgnoreCase(key)) {
+                            System.setProperty("paypal.client-secret", value);
+                        }
                         System.setProperty(key, value);
+                        System.out.println("Loaded env property: " + key);
                     }
                 }
             } catch (IOException e) {

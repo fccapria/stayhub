@@ -28,7 +28,14 @@ public class Room {
     @Column(name = "price_per_night", nullable = false, precision = 10, scale = 2)
     private BigDecimal pricePerNight;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
+
+    @Column(name = "active", nullable = false)
+    @Builder.Default
+    private boolean active = true;
 }

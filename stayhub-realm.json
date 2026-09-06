@@ -9,6 +9,10 @@
         "description": "Administrator Role"
       },
       {
+        "name": "HOST",
+        "description": "Host / Locatore Role"
+      },
+      {
         "name": "CUSTOMER",
         "description": "Customer/Guest Role"
       }
@@ -55,6 +59,24 @@
       ],
       "realmRoles": [
         "ADMIN"
+      ]
+    },
+    {
+      "username": "host",
+      "enabled": true,
+      "email": "host@stayhub.com",
+      "firstName": "Mario",
+      "lastName": "Rossi",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "host",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "CUSTOMER",
+        "HOST"
       ]
     },
     {
