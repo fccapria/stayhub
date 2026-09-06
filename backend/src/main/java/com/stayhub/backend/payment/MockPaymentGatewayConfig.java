@@ -40,7 +40,7 @@ public class MockPaymentGatewayConfig {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody("{\"status\": \"APPROVED\", \"transactionReference\": \"TX-CARD-GENERIC-OK\"}")));
+                        .withBody("{\"status\": \"APPROVED\", \"authCode\": \"8A2F19\"}")));
 
         // Stub 1: Approved Transaction
         stubFor(post(urlEqualTo("/api/v1/payments/card"))
@@ -48,7 +48,7 @@ public class MockPaymentGatewayConfig {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withBody("{\"status\": \"APPROVED\", \"transactionReference\": \"TX-CARD-0000-OK\"}")));
+                        .withBody("{\"status\": \"APPROVED\", \"authCode\": \"A7C491\"}")));
 
         // Stub 2: Declined Transaction
         stubFor(post(urlEqualTo("/api/v1/payments/card"))
@@ -65,7 +65,7 @@ public class MockPaymentGatewayConfig {
                         .withStatus(200)
                         .withFixedDelay(5000)
                         .withHeader("Content-Type", "application/json")
-                        .withBody("{\"status\": \"APPROVED\", \"transactionReference\": \"TX-CARD-TIMEOUT-OK\"}")));
+                        .withBody("{\"status\": \"APPROVED\", \"authCode\": \"99D0F1\"}")));
 
         logger.info("WireMock stubs initialized successfully on port {}", wiremockPort);
     }

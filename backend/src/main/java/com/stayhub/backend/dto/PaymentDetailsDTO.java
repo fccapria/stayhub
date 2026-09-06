@@ -13,4 +13,5 @@ public class PaymentDetailsDTO {
     private String expirationDate;
     private String paypalEmail;
     private String paypalOrderId;
+    private String transactionReference;
 }

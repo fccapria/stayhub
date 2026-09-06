@@ -58,6 +58,15 @@ class BookingServiceIntegrationTest {
         roomRepository.deleteAll();
         userRepository.deleteAll();
 
+        User ownerUser = User.builder()
+                .id("keycloak-uuid-owner")
+                .email("owner@stayhub.com")
+                .firstName("Mario")
+                .lastName("Rossi")
+                .role(Role.HOST)
+                .build();
+        userRepository.save(ownerUser);
+
         testUser = User.builder()
                 .id("keycloak-uuid-123")
                 .email("guest@stayhub.com")
@@ -72,7 +81,7 @@ class BookingServiceIntegrationTest {
                 .description("A beautiful room with sea view")
                 .capacity(2)
                 .pricePerNight(new BigDecimal("120.00"))
-                .owner(testUser)
+                .owner(ownerUser)
                 .build();
         roomRepository.save(testRoom);
     }
@@ -100,7 +109,9 @@ class BookingServiceIntegrationTest {
         assertEquals(BookingStatus.CONFIRMED, response.getStatus());
         assertEquals(PaymentStatus.COMPLETED, response.getPaymentStatus());
         assertEquals(new BigDecimal("360.00"), response.getTotalPrice());
-        assertEquals("TX-CARD-0000-OK", response.getTransactionReference());
+        assertNotNull(response.getTransactionReference());
+        assertTrue(response.getTransactionReference().startsWith("TX-CRD-"));
+        assertTrue(response.getTransactionReference().contains("-0000-"));
     }
 
     @Test
@@ -154,6 +165,20 @@ class BookingServiceIntegrationTest {
 
         assertThrows(RoomNotAvailableException.class, () ->
             bookingService.createBooking(testUser.getId(), request2)
+        );
+    }
+
+    @Test
+    void testCreateBooking_OwnRoom_ThrowsException() {
+        BookingRequestDTO request = BookingRequestDTO.builder()
+                .roomId(testRoom.getId())
+                .checkIn(LocalDate.now().plusDays(2))
+                .checkOut(LocalDate.now().plusDays(5))
+                .paymentMethod(PaymentMethod.CLASSIC_CARD)
+                .build();
+
+        assertThrows(IllegalArgumentException.class, () ->
+            bookingService.createBooking("keycloak-uuid-owner", request)
         );
     }
 }

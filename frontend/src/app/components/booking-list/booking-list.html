@@ -2,7 +2,7 @@
   <!-- Header -->
   <section class="page-header">
     <h1 class="gold-gradient-text">Le Mie Prenotazioni</h1>
-    <p class="subtitle">Visualizza la cronologia dei tuoi soggiorni, traccia le prenotazioni e scarica le fatture.</p>
+    <p class="subtitle">Visualizza e gestisci le tue prenotazioni.</p>
   </section>
 
   <!-- Alerts -->
@@ -59,14 +59,17 @@
 
           <div class="status-group">
             <span class="meta-label">Pagamento:</span>
-            <span class="badge" [ngClass]="booking.paymentStatus.toLowerCase()">
+            <span class="badge" [ngClass]="booking.paymentStatus ? booking.paymentStatus.toLowerCase() : 'pending'">
               {{ translatePaymentStatus(booking.paymentStatus) }}
             </span>
           </div>
 
           <div class="status-group ref" *ngIf="booking.transactionReference">
             <span class="meta-label">Riferimento:</span>
-            <code>{{ booking.transactionReference }}</code>
+            <code class="ref-code">
+              <span class="material-icons ref-icon">{{ booking.transactionReference.startsWith('TX-CRD') ? 'credit_card' : 'receipt' }}</span>
+              {{ booking.transactionReference }}
+            </code>
           </div>
         </div>
       </div>
@@ -80,14 +83,16 @@
 
         <div class="actions-section">
           <!-- Download Receipt (always available for confirmed bookings) -->
-          <a 
+          <button 
             *ngIf="booking.status !== 'CANCELLED'" 
-            [href]="getReceiptUrl(booking.id)" 
-            target="_blank" 
+            type="button"
+            (click)="downloadReceipt(booking.id)" 
+            [disabled]="downloadingReceiptId() === booking.id"
             class="glow-btn download-btn">
-            <span class="material-icons">receipt_long</span>
-            Scarica Fattura
-          </a>
+            <span *ngIf="downloadingReceiptId() !== booking.id" class="material-icons">receipt_long</span>
+            <span *ngIf="downloadingReceiptId() === booking.id" class="spinner-inline"></span>
+            {{ downloadingReceiptId() === booking.id ? 'Download...' : 'Scarica Ricevuta' }}
+          </button>
 
           <!-- Cancel Reservation -->
           <button 
@@ -111,9 +116,9 @@
   <!-- Empty State -->
   <div *ngIf="!loading() && bookings().length === 0" class="empty-state glass-panel">
     <span class="material-icons empty-icon">book_online</span>
-    <h3>Nessuna Prenotazione Trovata</h3>
-    <p>Non hai ancora prenotazioni registrate su questo account. Sfoglia le nostre camere e prenota il tuo primo soggiorno!</p>
-    <a href="/" class="glow-btn browse-btn">Sfoglia Camere di Lusso</a>
+    <h3>Nessuna prenotazione</h3>
+    <p>Non hai ancora effettuato prenotazioni.</p>
+    <a href="/" class="glow-btn browse-btn">Sfoglia alloggi</a>
   </div>
 
   <!-- Cancellation Confirmation Modal -->

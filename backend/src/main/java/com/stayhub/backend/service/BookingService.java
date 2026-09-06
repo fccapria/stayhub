@@ -34,6 +34,7 @@ public class BookingService {
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
     private final PaymentService paymentService;
+    private final EmailService emailService;
 
     @Transactional
     public BookingResponseDTO createBooking(String userId, BookingRequestDTO request) {
@@ -52,6 +53,10 @@ public class BookingService {
         // Lock Room and verify existence
         Room room = roomRepository.findByIdForUpdate(request.getRoomId())
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found with ID: " + request.getRoomId()));
+
+        if (room.getOwner() != null && room.getOwner().getId().equals(userId)) {
+            throw new IllegalArgumentException("Non puoi prenotare una camera di cui sei il proprietario");
+        }
 
         // Pessimistic Write Lock on existing bookings
         List<Booking> overlapping = bookingRepository.findOverlappingBookingsForUpdate(
@@ -106,14 +111,45 @@ public class BookingService {
         booking.setStatus(BookingStatus.CONFIRMED);
         payment.setStatus(PaymentStatus.COMPLETED);
         
-        if (request.getPaymentDetails() != null && request.getPaymentDetails().getPaypalOrderId() != null) {
-            payment.setTransactionReference(request.getPaymentDetails().getPaypalOrderId());
+        if (request.getPaymentDetails() != null) {
+            if (request.getPaymentDetails().getTransactionReference() != null && !request.getPaymentDetails().getTransactionReference().isBlank()) {
+                payment.setTransactionReference(request.getPaymentDetails().getTransactionReference());
+            } else if (request.getPaymentDetails().getPaypalOrderId() != null) {
+                payment.setTransactionReference(request.getPaymentDetails().getPaypalOrderId());
+            }
         }
 
         bookingRepository.save(booking);
         paymentRepository.save(payment);
 
-        logger.info("Booking created successfully with ID {}", booking.getId());
+        // Inizializza i proxy per l'invio asincrono
+        if (booking.getRoom() != null && booking.getRoom().getOwner() != null) {
+            org.hibernate.Hibernate.initialize(booking.getRoom().getOwner());
+            if (booking.getRoom().getOwner().getEmail() != null) {
+                booking.getRoom().getOwner().getEmail();
+            }
+        }
+        if (booking.getUser() != null) {
+            org.hibernate.Hibernate.initialize(booking.getUser());
+            if (booking.getUser().getEmail() != null) {
+                booking.getUser().getEmail();
+            }
+        }
+
+        // 1. Invia notifica email al cliente con ricevuta PDF allegata
+        try {
+            emailService.sendBookingConfirmation(booking, payment);
+        } catch (Exception e) {
+            logger.error("Failed to trigger booking confirmation email for booking {}: {}", booking.getId(), e.getMessage());
+        }
+
+        // 2. Invia notifica email al locatore (Host)
+        try {
+            emailService.sendHostBookingNotification(booking, payment);
+        } catch (Exception e) {
+            logger.error("Failed to trigger host booking notification email for booking {}: {}", booking.getId(), e.getMessage());
+        }
+
         return DtoMapper.toDto(booking, payment);
     }
 

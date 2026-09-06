@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, signal, PLATFORM_ID } from '@angular/core';
+import { Component, OnInit, OnDestroy, HostListener, inject, signal, effect, PLATFORM_ID } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { BookingService, BookingResponseDTO } from '../../services/booking.service';
 import { RoomService, RoomDTO } from '../../services/room.service';
@@ -10,7 +10,7 @@ import { RoomService, RoomDTO } from '../../services/room.service';
   templateUrl: './booking-list.html',
   styleUrl: './booking-list.css'
 })
-export class BookingListComponent implements OnInit {
+export class BookingListComponent implements OnInit, OnDestroy {
   private readonly platformId = inject(PLATFORM_ID);
   private readonly bookingService = inject(BookingService);
   private readonly roomService = inject(RoomService);
@@ -25,10 +25,37 @@ export class BookingListComponent implements OnInit {
   // Modal confirmation
   bookingToCancel = signal<BookingResponseDTO | null>(null);
   cancelLoading = signal<boolean>(false);
+  downloadingReceiptId = signal<number | null>(null);
+
+  constructor() {
+    effect(() => {
+      const isModalOpen = this.bookingToCancel() !== null;
+      if (isPlatformBrowser(this.platformId)) {
+        if (isModalOpen) {
+          document.body.classList.add('modal-open');
+        } else {
+          document.body.classList.remove('modal-open');
+        }
+      }
+    });
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapePress(): void {
+    if (this.bookingToCancel() && !this.cancelLoading()) {
+      this.closeCancelModal();
+    }
+  }
 
   ngOnInit(): void {
     if (isPlatformBrowser(this.platformId)) {
       this.loadData();
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (isPlatformBrowser(this.platformId)) {
+      document.body.classList.remove('modal-open');
     }
   }
 
@@ -77,11 +104,35 @@ export class BookingListComponent implements OnInit {
 
   getRoomDescription(roomId: number): string {
     const room = this.roomsMap().get(roomId);
-    return room ? room.description : 'Alloggio di lusso';
+    return room ? room.description : 'Alloggio';
   }
 
   getReceiptUrl(bookingId: number): string {
     return this.bookingService.getReceiptDownloadUrl(bookingId);
+  }
+
+  downloadReceipt(bookingId: number): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    this.downloadingReceiptId.set(bookingId);
+    this.bookingService.downloadReceipt(bookingId).subscribe({
+      next: (blob) => {
+        this.downloadingReceiptId.set(null);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `receipt-booking-${bookingId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        this.downloadingReceiptId.set(null);
+        console.error('Failed to download receipt:', err);
+        this.errorMessage.set('Impossibile scaricare la ricevuta. Assicurati di essere autenticato.');
+        setTimeout(() => this.errorMessage.set(null), 4000);
+      }
+    });
   }
 
   confirmCancelBooking(booking: BookingResponseDTO): void {

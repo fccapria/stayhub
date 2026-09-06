@@ -65,9 +65,21 @@ public class ClassicCardPaymentStrategy implements PaymentStrategy {
             if (response.getStatusCode() == HttpStatus.OK && response.getBody() != null) {
                 String status = (String) response.getBody().get("status");
                 if ("APPROVED".equals(status)) {
-                    String ref = (String) response.getBody().get("transactionReference");
-                    logger.info("Card transaction approved successfully: reference {}", ref);
-                    details.setPaypalOrderId(ref);
+                    String cardNum = details.getCardNumber() != null ? details.getCardNumber().replaceAll("\\s+", "") : "";
+                    String last4 = cardNum.length() >= 4 ? cardNum.substring(cardNum.length() - 4) : "0000";
+                    String dateStr = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"));
+
+                    // Usa l'authCode restituito dal gateway oppure genera un codice di autorizzazione univoco a 6 caratteri
+                    String authCode = (String) response.getBody().get("authCode");
+                    if (authCode == null || authCode.isBlank()) {
+                        authCode = java.util.UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+                    }
+
+                    String formattedRef = String.format("TX-CRD-%s-%s-%s", dateStr, last4, authCode);
+                    logger.info("Card transaction approved successfully: reference {}", formattedRef);
+
+                    details.setTransactionReference(formattedRef);
+                    details.setPaypalOrderId(formattedRef);
                     return true;
                 }
             }
