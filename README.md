@@ -1,8 +1,19 @@
-# StayHub - Operating & Development Guide
+# StayHub
 
-This guide describes how to start the StayHub application stack, reset database records, and manage Keycloak users.
+> Modern full-stack accommodation and B&B booking platform built with Spring Boot, Angular, Keycloak, and MariaDB.
 
 ---
+
+## 🛠️ Tech Stack
+
+- **Backend:** Java 21, Spring Boot 4, Spring Security (OAuth2 / OIDC Keycloak), Spring Data JPA, OpenPDF, Jakarta Validation
+- **Frontend:** Angular 19+ SPA (SSR Ready), TypeScript, CSS3, Keycloak JS
+- **Auth & IAM:** Keycloak (OIDC Realm with roles: `CUSTOMER`, `HOST`, `ADMIN`)
+- **Database & Infrastructure:** MariaDB, Docker Compose
+
+---
+
+## 🚀 Quick Start & Operating Guide
 
 ## 1. Local Infrastructure Services (Docker)
 
@@ -35,8 +46,9 @@ The REST API backend runs on port `8080`.
    ```
 2. Start the application using Java 21:
    ```bash
-   JAVA_HOME=/Users/fra/.java/openjdk21/Contents/Home ./mvnw spring-boot:run
+   ./mvnw spring-boot:run
    ```
+   *(Nota: assicurati che sia configurato JDK 21+ nel tuo ambiente o esporta `JAVA_HOME`)*
 
 ---
 
@@ -98,8 +110,38 @@ User authentication and roles are managed by Keycloak. Local user rows are synch
    * Click the **Role mapping** tab on the new user page.
    * Click **Assign role**.
    * Select the appropriate role:
-     * **`CUSTOMER`**: Access to room booking, personal bookings, and downloads.
-     * **`ADMIN`**: Access to global booking log and B&B room management.
+     * **`CUSTOMER`**: Accesso come viaggiatore (esplorazione, prenotazione soggiorni, consultazione viaggi propri e download ricevute).
+     * **`HOST`**: Locatore (gestione dei propri alloggi, consultazione delle prenotazioni e ricavi generati dai propri alloggi nel "Pannello Locatore", oltre a tutte le funzioni viaggiatore).
+     * **`ADMIN`**: Amministratore di sistema (gestione catalogo globale, consultazione registri completi e supervisione).
    * Click **Assign**.
 
+> [!NOTE]
+> Utenti demo pre-configurati in Keycloak:
+> - **`admin`** / `admin` (Ruoli: `ADMIN`, email: `admin@stayhub.com`)
+> - **`host`** / `host` (Ruoli: `CUSTOMER`, `HOST`, email: `host@stayhub.com`)
+> - **`customer`** / `customer` (Ruolo: `CUSTOMER`, email: `customer@stayhub.com`)
+>
+> Inoltre, qualsiasi utente può registrarsi direttamente dal form web scegliendo il ruolo **Viaggiatore** o **Locatore**, oppure attivare la modalità Locatore in qualunque momento con il pulsante *"Diventa Locatore"* nella barra di navigazione.
+
 Now the user is active! They can log in immediately on `http://localhost:4200` to start using the system.
+
+---
+
+## 🧪 Testing
+
+* **Backend Test Suite (Unit & Integration)**:
+  ```bash
+  cd backend && ./mvnw test
+  ```
+* **Frontend Test Suite (Vitest)**:
+  ```bash
+  cd frontend && npm test
+  ```
+* **Production Build**:
+  ```bash
+  cd frontend && npm run build
+  ```
+* **End-to-End Test Suite**:
+  ```bash
+  ./test-env.sh
+  ```

@@ -22,6 +22,8 @@ export interface BookingRequestDTO {
 export interface BookingResponseDTO {
   id: number;
   userId: string;
+  userName?: string;
+  userEmail?: string;
   roomId: number;
   checkIn: string;
   checkOut: string;
@@ -31,11 +33,13 @@ export interface BookingResponseDTO {
   transactionReference: string;
 }
 
+import { environment } from '../../environments/environment';
+
 @Injectable({
   providedIn: 'root'
 })
 export class BookingService {
-  private apiUrl = 'http://localhost:8080/api/v1/bookings';
+  private apiUrl = `${environment.apiUrl}/bookings`;
 
   constructor(private http: HttpClient) {}
 
@@ -59,11 +63,17 @@ export class BookingService {
     return this.http.put<BookingResponseDTO>(`${this.apiUrl}/${id}/cancel`, {});
   }
 
+  downloadReceipt(bookingId: number): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/exports/receipt?bookingId=${bookingId}`, {
+      responseType: 'blob'
+    });
+  }
+
   getReceiptDownloadUrl(bookingId: number): string {
-    return `http://localhost:8080/api/v1/exports/receipt?bookingId=${bookingId}`;
+    return `${environment.apiUrl}/exports/receipt?bookingId=${bookingId}`;
   }
 
   getPayPalClientId(): Observable<{ clientId: string }> {
-    return this.http.get<{ clientId: string }>('http://localhost:8080/api/v1/config/paypal');
+    return this.http.get<{ clientId: string }>(`${environment.apiUrl}/config/paypal`);
   }
 }

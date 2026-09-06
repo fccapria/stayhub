@@ -2,6 +2,8 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+import { environment } from '../../environments/environment';
+
 export interface RoomDTO {
   id?: number;
   name: string;
@@ -9,13 +11,16 @@ export interface RoomDTO {
   capacity: number;
   pricePerNight: number;
   ownerId?: string;
+  imageUrl?: string;
+  active?: boolean;
+  activeBookingsCount?: number;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class RoomService {
-  private apiUrl = 'http://localhost:8080/api/v1/rooms';
+  private apiUrl = `${environment.apiUrl}/rooms`;
 
   constructor(private http: HttpClient) {}
 
@@ -33,6 +38,18 @@ export class RoomService {
 
   createRoom(room: RoomDTO): Observable<RoomDTO> {
     return this.http.post<RoomDTO>(this.apiUrl, room);
+  }
+
+  uploadRoomImage(roomId: number, file: File): Observable<RoomDTO> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http.post<RoomDTO>(`${this.apiUrl}/${roomId}/image`, formData);
+  }
+
+  getRoomImageUrl(imageUrl?: string): string | null {
+    if (!imageUrl) return null;
+    if (imageUrl.startsWith('http')) return imageUrl;
+    return `${environment.backendUrl}${imageUrl}`;
   }
 
   deleteRoom(id: number): Observable<void> {

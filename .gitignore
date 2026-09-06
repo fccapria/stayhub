@@ -10,3 +10,18 @@ node_modules/
 .env
 .env.local
 .env.*.local
+*application-local.properties
+
+# Uploaded files
+uploads/
+backend/uploads/
+*.pdf
+
+# Local runner scripts
+run.sh
+backend/run.sh
+
+# Local documentation and notes
+PROJECT_CONTEXT.md
+TODO.md
+
