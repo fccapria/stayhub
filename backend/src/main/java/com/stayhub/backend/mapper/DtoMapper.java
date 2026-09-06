@@ -41,6 +41,8 @@ public class DtoMapper {
                 .capacity(room.getCapacity())
                 .pricePerNight(room.getPricePerNight())
                 .ownerId(room.getOwner() != null ? room.getOwner().getId() : null)
+                .imageUrl(room.getImageUrl())
+                .active(room.isActive())
                 .build();
     }
 
@@ -53,14 +55,30 @@ public class DtoMapper {
                 .capacity(dto.getCapacity())
                 .pricePerNight(dto.getPricePerNight())
                 .owner(dto.getOwnerId() != null ? User.builder().id(dto.getOwnerId()).build() : null)
+                .imageUrl(dto.getImageUrl())
                 .build();
     }
 
     public static BookingResponseDTO toDto(Booking booking, Payment payment) {
         if (booking == null) return null;
+
+        String userName = null;
+        String userEmail = null;
+        if (booking.getUser() != null) {
+            String first = booking.getUser().getFirstName() != null ? booking.getUser().getFirstName().trim() : "";
+            String last = booking.getUser().getLastName() != null ? booking.getUser().getLastName().trim() : "";
+            userName = (first + " " + last).trim();
+            if (userName.isEmpty()) {
+                userName = booking.getUser().getEmail();
+            }
+            userEmail = booking.getUser().getEmail();
+        }
+
         return BookingResponseDTO.builder()
                 .id(booking.getId())
                 .userId(booking.getUser() != null ? booking.getUser().getId() : null)
+                .userName(userName)
+                .userEmail(userEmail)
                 .roomId(booking.getRoom() != null ? booking.getRoom().getId() : null)
                 .checkIn(booking.getCheckIn())
                 .checkOut(booking.getCheckOut())

@@ -18,4 +18,10 @@ public interface RoomRepository extends JpaRepository<Room, Long> {
     Optional<Room> findByIdForUpdate(@Param("id") Long id);
 
     java.util.List<Room> findByOwnerId(String ownerId);
+
+    java.util.List<Room> findAllByActiveTrue();
+
+    java.util.List<Room> findByOwnerIdAndActiveTrue(String ownerId);
+
+    Optional<Room> findByIdAndActiveTrue(Long id);
 }

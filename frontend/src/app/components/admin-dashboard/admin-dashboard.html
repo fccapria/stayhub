@@ -1,8 +1,15 @@
 <div class="admin-container">
   <!-- Header -->
   <section class="admin-header">
-    <h1 class="gold-gradient-text">Console di Amministrazione</h1>
-    <p class="subtitle">Panoramica delle metriche, del catalogo delle camere e delle prenotazioni su StayHub.</p>
+    <div class="header-title-row">
+      <h1 class="gold-gradient-text">Pannello Locatore</h1>
+      <span *ngIf="isAdmin" class="admin-pill">Modalità Amministratore</span>
+    </div>
+    <p class="subtitle">Gestione alloggi e prenotazioni ricevute.</p>
+    <div class="scope-notice">
+      <span class="material-icons info-icon">verified_user</span>
+      <span>I dati e i guadagni mostrati si riferiscono ai tuoi alloggi.</span>
+    </div>
   </section>
 
   <!-- Status Banners -->
@@ -21,7 +28,7 @@
   <!-- Loading State -->
   <div *ngIf="loading() && rooms().length === 0" class="loading-state">
     <div class="spinner"></div>
-    <p>Caricamento metriche e registri...</p>
+    <p>Caricamento in corso...</p>
   </div>
 
   <!-- Stats Widgets -->
@@ -29,14 +36,14 @@
     <div class="stat-card glass-panel">
       <span class="material-icons stat-icon">hotel</span>
       <div class="stat-info">
-        <span class="stat-label">Camere Totali</span>
+        <span class="stat-label">I tuoi Alloggi</span>
         <span class="stat-value">{{ totalRooms() }}</span>
       </div>
     </div>
     <div class="stat-card glass-panel">
       <span class="material-icons stat-icon">book_online</span>
       <div class="stat-info">
-        <span class="stat-label">Prenotazioni Totali</span>
+        <span class="stat-label">Prenotazioni Ricevute</span>
         <span class="stat-value">{{ totalBookingsCount() }}</span>
       </div>
     </div>
@@ -50,7 +57,7 @@
     <div class="stat-card glass-panel highlight-gold">
       <span class="material-icons stat-icon gold-text">payments</span>
       <div class="stat-info">
-        <span class="stat-label">Ricavi Totali</span>
+        <span class="stat-label">I tuoi Ricavi Totali</span>
         <span class="stat-value gold-gradient-text">{{ totalRevenues() | currency:'EUR' }}</span>
       </div>
     </div>
@@ -60,7 +67,7 @@
   <div *ngIf="!loading() || rooms().length > 0" class="dashboard-grid animate-fade-in-up">
     <!-- COLUMN 1: Rooms Catalog & Creation -->
     <div class="dashboard-col">
-      <h2 class="col-title"><span class="material-icons">meeting_room</span> Catalogo Camere B&B</h2>
+      <h2 class="col-title"><span class="material-icons">meeting_room</span> I tuoi Alloggi</h2>
       
       <!-- List of existing rooms -->
       <div class="rooms-list-panel glass-panel">
@@ -78,18 +85,51 @@
             <tbody>
               <tr *ngFor="let room of rooms()">
                 <td>
-                  <strong>{{ room.name }}</strong>
+                  <div class="room-name-cell">
+                    <img [src]="getRoomThumbnail(room)" [alt]="room.name" class="room-thumbnail" />
+                    <div class="room-info-meta">
+                      <strong [class.text-muted]="room.active === false">{{ room.name }}</strong>
+                      <div *ngIf="room.active === false" class="decommission-badge">
+                        <span class="decommission-dot"></span>
+                        In dismissione ({{ room.activeBookingsCount || 0 }} {{ (room.activeBookingsCount === 1) ? 'soggiorno residuo' : 'soggiorni residui' }})
+                      </div>
+                    </div>
+                  </div>
                 </td>
                 <td>{{ room.capacity }} ospiti</td>
                 <td>{{ room.pricePerNight | currency:'EUR' }}</td>
                 <td class="text-right">
+                  <input 
+                    type="file" 
+                    [id]="'tableFileInput-' + room.id" 
+                    accept="image/png, image/jpeg, image/webp" 
+                    style="display: none;" 
+                    (change)="onTableFileSelected($event, room)" 
+                  />
                   <button 
-                    class="icon-action-btn delete-btn" 
-                    [disabled]="actionLoading()" 
-                    (click)="deleteRoom(room.id)"
-                    title="Elimina Camera">
-                    <span class="material-icons">delete_outline</span>
+                    class="icon-action-btn upload-table-btn" 
+                    [disabled]="uploadingRoomId() === room.id || room.active === false" 
+                    (click)="triggerTableUpload(room.id)"
+                    title="Carica / Cambia Foto">
+                    <span *ngIf="uploadingRoomId() !== room.id" class="material-icons">add_a_photo</span>
+                    <span *ngIf="uploadingRoomId() === room.id" class="spinner-inline"></span>
                   </button>
+                  <ng-container *ngIf="room.active !== false; else retiredAction">
+                    <button 
+                      class="icon-action-btn delete-btn" 
+                      [disabled]="actionLoading()" 
+                      (click)="deleteRoom(room.id)"
+                      title="Elimina o Dismetti Camera">
+                      <span class="material-icons">delete_outline</span>
+                    </button>
+                  </ng-container>
+                  <ng-template #retiredAction>
+                    <span 
+                      class="retired-pill" 
+                      title="Alloggio ritirato dal catalogo pubblico. Rimane visibile qui fino al completamento dei soggiorni attivi.">
+                      <span class="material-icons">inventory_2</span> Ritirato
+                    </span>
+                  </ng-template>
                 </td>
               </tr>
               <tr *ngIf="rooms().length === 0">
@@ -111,12 +151,17 @@
               id="newRoomName"
               type="text" 
               class="custom-input" 
+              [class.input-error]="newRoomNameTouched() && !isNewRoomNameValid()"
               placeholder="es. Suite Presidenziale Oro"
               [ngModel]="newRoomName()"
               (ngModelChange)="newRoomName.set($event)"
+              (blur)="newRoomNameTouched.set(true)"
               name="newRoomName"
               required
             />
+            <span class="validation-error" *ngIf="newRoomNameTouched() && !isNewRoomNameValid()">
+              Il nome della camera deve contenere almeno 3 caratteri.
+            </span>
           </div>
 
           <div class="custom-input-group">
@@ -124,13 +169,18 @@
             <textarea 
               id="newRoomDesc"
               class="custom-input textarea" 
+              [class.input-error]="newRoomDescriptionTouched() && !isNewRoomDescriptionValid()"
               placeholder="Fornisci una descrizione lussuosa della camera e dei suoi servizi..."
               [ngModel]="newRoomDescription()"
               (ngModelChange)="newRoomDescription.set($event)"
+              (blur)="newRoomDescriptionTouched.set(true)"
               name="newRoomDesc"
               rows="4"
               required
             ></textarea>
+            <span class="validation-error" *ngIf="newRoomDescriptionTouched() && !isNewRoomDescriptionValid()">
+              La descrizione deve contenere almeno 10 caratteri.
+            </span>
           </div>
 
           <div class="date-row">
@@ -140,12 +190,18 @@
                 id="newRoomCapacity"
                 type="number" 
                 class="custom-input" 
+                [class.input-error]="newRoomCapacityTouched() && !isNewRoomCapacityValid()"
                 min="1"
+                max="50"
                 [ngModel]="newRoomCapacity()"
                 (ngModelChange)="newRoomCapacity.set($event)"
+                (blur)="newRoomCapacityTouched.set(true)"
                 name="newRoomCapacity"
                 required
               />
+              <span class="validation-error" *ngIf="newRoomCapacityTouched() && !isNewRoomCapacityValid()">
+                La capacità deve essere compresa tra 1 e 50 ospiti.
+              </span>
             </div>
             <div class="custom-input-group">
               <label class="custom-input-label" for="newRoomPrice">Prezzo per Notte (€)</label>
@@ -153,19 +209,48 @@
                 id="newRoomPrice"
                 type="number" 
                 class="custom-input" 
+                [class.input-error]="newRoomPriceTouched() && !isNewRoomPriceValid()"
                 min="1"
                 [ngModel]="newRoomPrice()"
                 (ngModelChange)="newRoomPrice.set($event)"
+                (blur)="newRoomPriceTouched.set(true)"
                 name="newRoomPrice"
                 required
               />
+              <span class="validation-error" *ngIf="newRoomPriceTouched() && !isNewRoomPriceValid()">
+                Il prezzo per notte deve essere di almeno 1 €.
+              </span>
+            </div>
+          </div>
+
+          <div class="custom-input-group">
+            <label class="custom-input-label" for="roomPhoto">Foto della Camera (Opzionale)</label>
+            <div class="file-upload-wrapper">
+              <input 
+                id="roomPhoto"
+                type="file" 
+                accept="image/png, image/jpeg, image/webp" 
+                class="file-input-hidden"
+                (change)="onFileSelected($event)"
+                #fileInput
+              />
+              <button type="button" class="upload-trigger-btn" (click)="fileInput.click()">
+                <span class="material-icons">cloud_upload</span>
+                <span class="upload-trigger-text">{{ selectedFile() ? selectedFile()!.name : 'Carica immagine (JPG, PNG, WEBP max 5MB)' }}</span>
+              </button>
+            </div>
+            <div *ngIf="selectedFilePreview()" class="image-preview-container">
+              <img [src]="selectedFilePreview()" alt="Anteprima foto" class="image-preview" />
+              <button type="button" class="remove-preview-btn" (click)="removeSelectedFile(fileInput)" title="Rimuovi foto">
+                <span class="material-icons">close</span>
+              </button>
             </div>
           </div>
 
           <button 
             type="submit" 
             class="glow-btn submit-btn full-width" 
-            [disabled]="actionLoading() || !roomForm.valid">
+            [disabled]="actionLoading() || !isRoomFormValid()">
             <span *ngIf="!actionLoading()">Crea Camera</span>
             <span *ngIf="actionLoading()" class="spinner-inline"></span>
           </button>
@@ -173,12 +258,12 @@
       </div>
     </div>
 
-    <!-- COLUMN 2: Global Reservation Logs -->
+    <!-- COLUMN 2: Reservation Logs -->
     <div class="dashboard-col">
-      <h2 class="col-title"><span class="material-icons">receipt_long</span> Registro Prenotazioni Globale</h2>
+      <h2 class="col-title"><span class="material-icons">receipt_long</span> Prenotazioni Ricevute</h2>
       
       <div class="bookings-log-panel glass-panel">
-        <h3>Attività di Prenotazione</h3>
+        <h3>Registro Soggiorni dei tuoi Alloggi</h3>
         <div class="table-container">
           <table class="admin-table">
             <thead>
@@ -189,6 +274,7 @@
                 <th>Date</th>
                 <th>Prezzo</th>
                 <th>Stato</th>
+                <th class="text-right">Ricevuta</th>
               </tr>
             </thead>
             <tbody>
@@ -197,9 +283,9 @@
                   <span class="booking-tag">#{{ booking.id }}</span>
                 </td>
                 <td>
-                  <div class="user-cell" [title]="booking.userId">
+                  <div class="user-cell" [title]="booking.userEmail ? (booking.userName + ' (' + booking.userEmail + ')') : (booking.userName || booking.userId)">
                     <span class="material-icons text-muted">person</span>
-                    <span>{{ booking.userId.substring(0, 8) }}...</span>
+                    <span>{{ booking.userName || booking.userEmail || (booking.userId ? (booking.userId.length > 8 ? booking.userId.substring(0, 8) + '...' : booking.userId) : 'Ospite') }}</span>
                   </div>
                 </td>
                 <td>
@@ -219,9 +305,21 @@
                     {{ translateStatus(booking.status) }}
                   </span>
                 </td>
+                <td class="text-right">
+                  <button 
+                    *ngIf="booking.status === 'CONFIRMED'"
+                    class="icon-action-btn pdf-btn" 
+                    [disabled]="downloadingReceiptId() === booking.id" 
+                    (click)="downloadReceipt(booking.id)"
+                    title="Scarica Ricevuta PDF">
+                    <span *ngIf="downloadingReceiptId() !== booking.id" class="material-icons">picture_as_pdf</span>
+                    <span *ngIf="downloadingReceiptId() === booking.id" class="spinner-inline"></span>
+                  </button>
+                  <span *ngIf="booking.status !== 'CONFIRMED'" class="text-muted" style="font-size: 0.8rem;">-</span>
+                </td>
               </tr>
               <tr *ngIf="bookings().length === 0">
-                <td colspan="6" class="text-center text-muted">Nessuna prenotazione effettuata su StayHub al momento.</td>
+                <td colspan="7" class="text-center text-muted">Nessuna prenotazione ricevuta per i tuoi alloggi al momento.</td>
               </tr>
             </tbody>
           </table>

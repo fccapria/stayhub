@@ -14,4 +14,7 @@ public class RoomDTO {
     private Integer capacity;
     private BigDecimal pricePerNight;
     private String ownerId;
+    private String imageUrl;
+    private Boolean active;
+    private Long activeBookingsCount;
 }

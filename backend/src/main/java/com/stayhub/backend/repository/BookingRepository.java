@@ -30,13 +30,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
         @Param("checkOut") LocalDate checkOut
     );
 
-    List<Booking> findByUserId(String userId);
+    @Query("SELECT b FROM Booking b JOIN FETCH b.room r LEFT JOIN FETCH r.owner JOIN FETCH b.user WHERE b.user.id = :userId")
+    List<Booking> findByUserId(@Param("userId") String userId);
 
-    @Query("SELECT b FROM Booking b JOIN FETCH b.room JOIN FETCH b.user WHERE b.id = :id")
+    @Query("SELECT b FROM Booking b JOIN FETCH b.room r LEFT JOIN FETCH r.owner JOIN FETCH b.user WHERE b.id = :id")
     Optional<Booking> findByIdWithRoomAndUser(@Param("id") Long id);
 
-    @Query("SELECT b FROM Booking b JOIN FETCH b.room JOIN FETCH b.user WHERE b.room.owner.id = :ownerId")
+    @Query("SELECT b FROM Booking b JOIN FETCH b.room r LEFT JOIN FETCH r.owner JOIN FETCH b.user WHERE r.owner.id = :ownerId")
     List<Booking> findByRoomOwnerId(@Param("ownerId") String ownerId);
 
     List<Booking> findByRoomIdAndStatusNot(Long roomId, com.stayhub.backend.entity.BookingStatus status);
+
+    long countByRoomId(Long roomId);
+
+    @Query("SELECT COUNT(b) FROM Booking b WHERE b.room.id = :roomId AND b.status = 'CONFIRMED' AND b.checkOut >= :today")
+    long countActiveFutureBookings(@Param("roomId") Long roomId, @Param("today") LocalDate today);
 }
