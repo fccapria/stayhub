@@ -74,9 +74,10 @@
     <h3>Nessun alloggio disponibile</h3>
     <p>Al momento non ci sono alloggi registrati. Riprova più tardi.</p>
   </div>
+</div>
 
-  <!-- Reservation & Payment Modal -->
-  <div *ngIf="selectedRoom() as room" class="modal-backdrop" (click)="closeBookingModal()">
+<!-- Reservation & Payment Modal -->
+<div *ngIf="selectedRoom() as room" class="modal-backdrop" (click)="closeBookingModal()">
     <div class="modal-card glass-panel" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Prenota {{ room.name }}</h2>
@@ -352,4 +353,4 @@
       </div>
     </div>
   </div>
-</div>
+

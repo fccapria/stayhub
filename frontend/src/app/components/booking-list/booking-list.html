@@ -120,31 +120,31 @@
     <p>Non hai ancora effettuato prenotazioni.</p>
     <a href="/" class="glow-btn browse-btn">Sfoglia alloggi</a>
   </div>
+</div>
 
-  <!-- Cancellation Confirmation Modal -->
-  <div *ngIf="bookingToCancel() as booking" class="modal-backdrop" (click)="closeCancelModal()">
-    <div class="modal-card glass-panel cancel-dialog" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2>Conferma Cancellazione</h2>
-        <button class="close-btn" (click)="closeCancelModal()">&times;</button>
-      </div>
+<!-- Cancellation Confirmation Modal -->
+<div *ngIf="bookingToCancel() as booking" class="modal-backdrop" (click)="closeCancelModal()">
+  <div class="modal-card glass-panel cancel-dialog" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Conferma Cancellazione</h2>
+      <button class="close-btn" (click)="closeCancelModal()">&times;</button>
+    </div>
 
-      <div class="modal-body text-center">
-        <span class="material-icons warning-icon">warning_amber</span>
-        <p class="modal-prompt">Sei sicuro di voler annullare il tuo soggiorno presso <strong>{{ getRoomName(booking.roomId) }}</strong>?</p>
-        <p class="modal-subtext">Questa azione cambierà lo stato della tua prenotazione in CANCELLATA e annullerà le date del soggiorno (da {{ booking.checkIn | date:'shortDate' }} a {{ booking.checkOut | date:'shortDate' }}).</p>
-      </div>
+    <div class="modal-body text-center">
+      <span class="material-icons warning-icon">warning_amber</span>
+      <p class="modal-prompt">Sei sicuro di voler annullare il tuo soggiorno presso <strong>{{ getRoomName(booking.roomId) }}</strong>?</p>
+      <p class="modal-subtext">Questa azione cambierà lo stato della tua prenotazione in CANCELLATA e annullerà le date del soggiorno (da {{ booking.checkIn | date:'shortDate' }} a {{ booking.checkOut | date:'shortDate' }}).</p>
+    </div>
 
-      <div class="modal-footer">
-        <button class="outline-btn" (click)="closeCancelModal()" [disabled]="cancelLoading()">Mantieni Prenotazione</button>
-        <button 
-          class="glow-btn danger-btn" 
-          (click)="executeCancelBooking()" 
-          [disabled]="cancelLoading()">
-          <span *ngIf="!cancelLoading()">Conferma Cancellazione</span>
-          <span *ngIf="cancelLoading()" class="spinner-inline"></span>
-        </button>
-      </div>
+    <div class="modal-footer">
+      <button class="outline-btn" (click)="closeCancelModal()" [disabled]="cancelLoading()">Mantieni Prenotazione</button>
+      <button 
+        class="glow-btn danger-btn" 
+        (click)="executeCancelBooking()" 
+        [disabled]="cancelLoading()">
+        <span *ngIf="!cancelLoading()">Conferma Cancellazione</span>
+        <span *ngIf="cancelLoading()" class="spinner-inline"></span>
+      </button>
     </div>
   </div>
 </div>

@@ -242,7 +242,14 @@ body.modal-open {
 /* Global Modal Styles */
 .modal-backdrop {
   position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   background: rgba(5, 5, 8, 0.72);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
